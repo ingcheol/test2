@@ -1,0 +1,50 @@
+
+# springboot 내장 서버 환경 설정
+# bootwar 실행시에만 적용이됨
+# war tomcat 실행 할때는 적용안되
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:keystore.p12
+    key-store-password: ENC(idIWCdznEM3ggslDeTmLJw==)
+    key-store-type: PKCS12
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+spring:
+  mvc:
+    view:
+      prefix: /views/
+      suffix: .jsp
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/shopdb?serverTimezone=Asia/Seoul
+    username: smuser
+    password: ENC(idIWCdznEM3ggslDeTmLJw==)
+
+mybatis:
+  type-aliases-package: edu.sm.app.dto
+  mapper-locations: classpath:/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+logging:
+  level:
+    root: error
+
+# Application Config
+app:
+  key:
+    skey: ${MY_KEY}
+
+
+
+
+
+
+
+
+
+
+
+
