@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.sm.app.repository.ProductRepository">
+    <select id="searchProductList"
+            parameterType="ProductSearch" resultType="Product">
+        select * from product p inner join cate c on p.cate_id = c.cate_id
+        <where>
+            <if test="productName != null and !productName.equals('')">
+                p.product_name like concat('%',#{productName},'%')
+            </if>
+            <if test="startPrice != null and startPrice != 0">
+                and cust_regdate &gt;= #{startDate}
+<!--                <![CDATA[-->
+<!--                  and p.product_price  >=  #{startPrice}-->
+<!--                 ]]>-->
+            </if>
+            <if test="endPrice != null and endPrice != 0">
+                <!--and date(cust_regdate) &lt;= #{endDate} -->
+                <![CDATA[
+                  and p.product_price  <=  #{endPrice}
+                ]]>
+            </if>
+            <if test="cateId != null and cateId != 0">
+                <!--and date(cust_regdate) &lt;= #{endDate} -->
+                <![CDATA[
+                  and c.cate_id  =  #{cateId}
+                ]]>
+            </if>
+        </where>
+    </select>
+    <select id="getpageSearch"  parameterType="ProductSearch" resultType="Product">
+        select * from product p inner join cate c on p.cate_id = c.cate_id
+        <where>
+            <if test="productName != null and !productName.equals('')">
+                p.product_name like concat('%',#{productName},'%')
+            </if>
+            <if test="startPrice != null and startPrice != 0">
+                <!--and cust_regdate &gt;= #{startDate} -->
+                <![CDATA[
+                  and p.product_price  >=  #{startPrice}
+                 ]]>
+            </if>
+            <if test="endPrice != null and endPrice != 0">
+                <!--and date(cust_regdate) &lt;= #{endDate} -->
+                <![CDATA[
+                  and p.product_price  <=  #{endPrice}
+                ]]>
+            </if>
+            <if test="cateId != null and cateId != 0">
+                <!--and date(cust_regdate) &lt;= #{endDate} -->
+                <![CDATA[
+                  and c.cate_id  =  #{cateId}
+                ]]>
+            </if>
+        </where>
+    </select>
+    <select id="getpage" resultType="Product">
+        select * from product p
+                          inner join cate c on p.cate_id = c.cate_id
+    </select>
+    <select id="select" parameterType="Integer" resultType="Product">
+        SELECT * FROM product p
+                          INNER JOIN cate c ON p.cate_id=c.cate_id WHERE p.product_id=#{productId}
+    </select>
+    <select id="selectAll" resultType="Product">
+        select * from product p
+                          inner join cate c on p.cate_id = c.cate_id
+    </select>
+    <insert id="insert" parameterType="Product">
+        INSERT INTO product VALUES (0,#{productName},#{productPrice},#{discountRate}, #{productImg}, NOW(), NOW(), #{cateId})
+    </insert>
+    <update id="update" parameterType="Product">
+        UPDATE product SET product_name=#{productName},product_price=#{productPrice},discount_rate=#{discountRate},product_img=#{productImg}, product_update=NOW() WHERE product_id=#{productId}
+    </update>
+    <delete id="delete" parameterType="Integer">
+        DELETE FROM product WHERE product_id=#{productId}
+    </delete>
+
+</mapper>
