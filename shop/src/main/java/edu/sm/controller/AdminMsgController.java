@@ -25,19 +25,11 @@ public class AdminMsgController {
         String target = msg.getReceiveid();
         log.info("-------------------------1");
         log.info(target);
-
-        try {
-            chatService.saveMessage(
-                    msg.getSendid(),      // senderId
-                    msg.getReceiveid(),   // receiverId
-                    msg.getContent1()     // message
-            );
-            log.info("✅ DB 저장 성공: {} → {} : {}",
-                    msg.getSendid(), msg.getReceiveid(), msg.getContent1());
-        } catch (Exception e) {
-            log.error("❌ DB 저장 실패", e);
-        }
-
+        chatService.saveMessage(
+                msg.getSendid(),
+                msg.getReceiveid(),
+                msg.getContent1()
+        );
         template.convertAndSend("/adminsend/to/" + target, msg);
         log.info("-------------------------2");
     }
