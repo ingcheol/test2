@@ -328,31 +328,6 @@
                         <button type="button" class="btn btn-primary mb-2">Search</button>
                     </form>
                     <form class="form-inline" id="product_search_form">
-
-                        <div class="form-group" id="sa2">
-                            <input type="text" name="productName" class="form-control mb-2 mr-sm-2" placeholder="Input Name .." id="txt"
-                                <c:if test="${searchproduct.productName != null}">
-                                       value="${searchproduct.productName}"
-                                </c:if>
-                            >
-                            <input type="number" name="startPrice" class="form-control mb-2 mr-sm-2" id="sprice" min="0" step="5000" placeholder="Input Start Price .."
-                                <c:if test="${searchproduct.startPrice != null}">
-                                       value="${searchproduct.startPrice}"
-                                </c:if>
-                            >
-                            <input type="number" name="endPrice" class="form-control mb-2 mr-sm-2" id="sprice" min="0" step="5000" placeholder="Input End Price .."
-                                <c:if test="${searchproduct.endPrice != null}">
-                                       value="${searchproduct.endPrice}"
-                                </c:if>
-                            >
-                            <select class="form-control mb-2 mr-sm-2" id="sel1" name="cateId">
-                                <option value="0" <c:if test="${searchproduct.cateId == 0}">selected</c:if>>전체</option>
-                                <option value="10" <c:if test="${searchproduct.cateId == 10}">selected</c:if>>상의</option>
-                                <option value="20" <c:if test="${searchproduct.cateId == 20}">selected</c:if>>하의</option>
-                                <option value="30" <c:if test="${searchproduct.cateId == 30}">selected</c:if>>신발</option>
-                                <option value="40" <c:if test="${searchproduct.cateId == 40}">selected</c:if>>가방</option>
-                            </select>
-                        </div>
                         <button type="button" class="btn btn-primary mb-2">Search</button>
                     </form>
                     <!-- Topbar Navbar -->

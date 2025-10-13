@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="edu.sm.app.repository.ChatMapper">
+
+    <insert id="save" parameterType="Chat">
+        INSERT INTO chat (sender_id, receiver_id, message)
+        VALUES (#{senderId}, #{receiverId}, #{message})
+    </insert>
+
+    <select id="findBySenderId" resultType="Chat">
+        SELECT chat_id, sender_id, receiver_id, message, regdate
+        FROM chat
+        WHERE sender_id = #{senderId}
+        ORDER BY regdate ASC
+    </select>
+
+    <select id="findByReceiverId" resultType="Chat">
+        SELECT chat_id, sender_id, receiver_id, message, regdate
+        FROM chat
+        WHERE receiver_id = #{receiverId}
+        ORDER BY regdate ASC
+    </select>
+
+    <select id="findBetweenUsers" resultType="Chat">
+        SELECT chat_id, sender_id, receiver_id, message, regdate
+        FROM chat
+        WHERE (sender_id = #{userId1} AND receiver_id = #{userId2})
+           OR (sender_id = #{userId2} AND receiver_id = #{userId1})
+        ORDER BY regdate ASC
+    </select>
+
+    <select id="findAll" resultType="Chat">
+        SELECT chat_id, sender_id, receiver_id, message, regdate
+        FROM chat
+        ORDER BY regdate DESC
+    </select>
+
+    <select id="findById" resultType="Chat">
+        SELECT chat_id, sender_id, receiver_id, message, regdate
+        FROM chat
+        WHERE chat_id = #{chatId}
+    </select>
+
+</mapper>
