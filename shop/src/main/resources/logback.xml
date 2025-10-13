@@ -66,6 +66,25 @@
         </rollingPolicy>
     </appender>
 
+    <!-- 기존 appender들 다음에 추가 -->
+    <appender name="MAPCLICK" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/mapclick.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss}, %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/mapclick.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>5MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 지금은 컨트롤러에서 log찍는데 나중에 마커 클릭하는곳으로 수정해야함 -->
+    <logger name="edu.sm.controller.MapLogController" level="INFO">
+        <appender-ref ref="MAPCLICK" />
+    </logger>
 
 
     <logger name="org.springframework.web" level="DEBUG">
