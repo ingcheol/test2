@@ -4,7 +4,7 @@
   <p>Chat Left Menu</p>
   <ul class="nav nav-pills flex-column">
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/chat/chat1"/> ">chat1</a>
+      <a class="nav-link" href="<c:url value="/chat/chat1"/>">chat1</a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="<c:url value="/chat/chat2"/>">chat2</a>

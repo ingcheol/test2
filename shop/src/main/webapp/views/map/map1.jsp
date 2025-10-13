@@ -1,10 +1,133 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <style>
-  #map1{
-    width:auto;
-    height:400px;
-    border:2px solid red;
+  /* Map 페이지 전용 스타일 */
+  .map-container {
+    padding: 40px 20px;
+    background: #f5f5f5;
+    min-height: 100vh;
+  }
+
+  .map-header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+    animation: fadeInDown 0.8s ease;
+  }
+
+  .map-header h2 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin-bottom: 15px;
+  }
+
+  .location-info {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    animation: fadeInUp 0.8s ease 0.2s both;
+  }
+
+  .location-info h5 {
+    color: #667eea;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+  }
+
+  .location-info h3 {
+    color: #333;
+    font-size: 1.1rem;
+    margin: 8px 0;
+    font-weight: 500;
+  }
+
+  .map-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+    animation: fadeInUp 0.8s ease 0.4s both;
+  }
+
+  .map-btn {
+    padding: 12px 30px;
+    border-radius: 25px;
+    border: none;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  .map-btn.hospital {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .map-btn.hospital:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .map-btn.store {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+
+  .map-btn.store:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+  }
+
+  #map1 {
+    width: 100%;
+    height: 500px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: fadeInUp 0.8s ease 0.6s both;
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 반응형 */
+  @media (max-width: 768px) {
+    .map-header h2 {
+      font-size: 2rem;
+    }
+
+    .map-controls {
+      flex-direction: column;
+    }
+
+    #map1 {
+      height: 400px;
+    }
   }
 </style>
 <script>

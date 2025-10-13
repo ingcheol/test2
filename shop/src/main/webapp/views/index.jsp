@@ -431,10 +431,10 @@
                         </div>
                     </li>
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-59">
-                        <a href="https://americathebeautiful.com/ko/america-250/" data-text="chart">차트</a>
+                        <a href="<c:url value="chart"/>" data-text="chart">차트</a>
                     </li>
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-61">
-                        <a href="https://americathebeautiful.com/ko/road-trips/" data-text="chat">채팅</a>
+                        <a href="<c:url value="/chat"/>" data-text="chat">채팅</a>
                     </li>
                 </ul>
             </nav>
@@ -474,3 +474,35 @@
 </script>
     </div>
 </div>
+<body>
+<div id="top-bar" class="is-top">
+    <div class="very-top-bar">
+        <a href="<c:url value="/register"/>" data-text="회원가입">회원가입</a>
+        <a href="<c:url value="/login"/>" data-text="로그인">로그인</a>
+    </div>
+    <div id="menu-background" style="display: none;"></div>
+    <div class="top-bar-wrap">
+        <div id="top-nav-wrap" aria-hidden="false" style="display: flex;">
+            <nav id="top-menu" aria-label="Primary navigation">
+                <ul class="top-menu-list">
+                    <li><a href="<c:url value="/"/>">홈</a></li>
+                    <li><a href="<c:url value="/map/map1"/>">지도</a></li>
+                    <li><a href="<c:url value="/chart"/>">차트</a></li>
+                    <li><a href="<c:url value="/chat"/>">채팅</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid" style="margin-top: 20px;">
+    <div class="row">
+        <c:if test="${left != null}">
+            <jsp:include page="${left}.jsp"/>
+        </c:if>
+        <c:if test="${center != null}">
+            <jsp:include page="${center}.jsp"/>
+        </c:if>
+    </div>
+</div>
+</body>
