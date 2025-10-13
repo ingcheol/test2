@@ -6,6 +6,60 @@
 <html lang="ko">
 
 <head>
+<%--    /* 핫플레이스 모달 스타일 */--%>
+    <style>
+        #hotplaceModal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #hotplaceModal .alert-info {
+            border-left: 4px solid #4e73df;
+        }
+
+        #hotplaceModal .alert-warning {
+            border-left: 4px solid #f6c23e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .top-place-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e3e6f0;
+        }
+
+        .top-place-item:last-child {
+            border-bottom: none;
+        }
+
+        .place-rank {
+            font-size: 1.5rem;
+            font-weight: bold;
+            width: 40px;
+            text-align: center;
+        }
+
+        .rank-1 { color: #FFD700; }
+        .rank-2 { color: #C0C0C0; }
+        .rank-3 { color: #CD7F32; }
+
+        .place-name {
+            flex: 1;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .place-count {
+            font-size: 0.9rem;
+            color: #5a5c69;
+        }
+    </style>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -108,8 +162,8 @@
                     $('#cust_search_form').hide();
                     $('#product_search_form').hide();
                 }
-            }
-        };
+            },
+        }
         $(function(){
             index.init();
         });
@@ -581,7 +635,168 @@
     <!-- Custom scripts for all pages-->
     <script src="/js/sb-admin-2.min.js"></script>
 
+    <!-- 핫플레이스 알림 모달 -->
+    <div class="modal fade" id="hotplaceModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-fire"></i> 핫플레이스 알림
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <h6 class="font-weight-bold">
+                            <i class="fas fa-trophy"></i> 오늘의 인기 장소 Top 3
+                        </h6>
+                        <div id="top3Container">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+                    </div>
 
+                    <div class="alert alert-warning mb-0" id="recentHotPlaceAlert" style="display: none;">
+                        <h6 class="font-weight-bold">
+                            <i class="fas fa-fire"></i> 1시간 내 핫플레이스
+                        </h6>
+                        <p class="mb-0">
+                            <span id="recentHotPlace" class="font-weight-bold text-danger"></span>
+                            <span id="recentCount" class="badge badge-danger ml-2"></span>
+                        </p>
+                        <small class="text-muted">최근 1시간 동안 급상승 중입니다!</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">닫기</button>
+                    <a href="/chart" class="btn btn-sm btn-primary">
+                        <i class="fas fa-chart-bar"></i> 차트 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 핫플레이스 알림 확인
+        $(document).ready(function() {
+            // 로그인 여부 확인
+            <c:if test="${sessionScope.admin != null}">
+            console.log('관리자 로그인 확인됨, 핫플레이스 알림 체크 시작');
+
+            // 5초 후 알림 체크
+            setTimeout(function() {
+                checkHotPlace();
+            }, 5000);
+
+            // 1시간마다 알림 체크
+            setInterval(function() {
+                checkHotPlace();
+            }, 3600000);
+            </c:if>
+
+            <c:if test="${sessionScope.admin == null}">
+            console.log('로그인되지 않음');
+            </c:if>
+        });
+
+        function checkHotPlace() {
+            console.log('핫플레이스 데이터 요청 중...');
+
+            // 마지막 알림 시간 체크
+            var lastNotificationTime = localStorage.getItem('lastHotplaceNotification');
+            var currentTime = new Date().getTime();
+            var oneHour = 3600000;
+
+            // 마지막 알림이 1시간 이내라면 알림 건너뛰기
+            if (lastNotificationTime) {
+                var timeDiff = currentTime - parseInt(lastNotificationTime);
+                if (timeDiff < oneHour) {
+                    var remainingTime = Math.ceil((oneHour - timeDiff) / 60000); // 남은 시간(분)
+                    console.log('알림 대기 중... ' + remainingTime + '분 후 다시 표시됩니다.');
+                    return;
+                }
+            }
+
+            $.ajax({
+                url: '/logs/hotplace',
+                type: 'GET',
+                success: function(data) {
+                    console.log('핫플레이스 데이터:', data);
+
+                    if (data.hasHotPlace && data.top3Places && data.top3Places.length > 0) {
+                        // Top 3 장소 표시
+                        var top3Html = '';
+                        data.top3Places.forEach(function(place, index) {
+                            var rank = index + 1;
+                            var rankClass = 'rank-' + rank;
+                            var medal = rank === 1 ? '1' : (rank === 2 ? '2' : '3');
+
+                            top3Html += '<div class="top-place-item">';
+                            top3Html += '<span class="place-rank ' + rankClass + '">' + medal + '</span>';
+                            top3Html += '<span class="place-name">' + place.name + '</span>';
+                            top3Html += '<span class="place-count">';
+                            top3Html += '<span class="badge badge-primary">' + place.count + '회</span>';
+                            top3Html += '</span>';
+                            top3Html += '</div>';
+                        });
+                        $('#top3Container').html(top3Html);
+
+                        // 1시간 내 핫플레이스 표시
+                        if (data.showRecent && data.recentHotPlace) {
+                            $('#recentHotPlace').text(data.recentHotPlace.name);
+                            $('#recentCount').text(data.recentHotPlace.count + '회 클릭');
+                            $('#recentHotPlaceAlert').show();
+                        } else {
+                            $('#recentHotPlaceAlert').hide();
+                        }
+
+                        // 현재 시간을 localStorage에 저장
+                        localStorage.setItem('lastHotplaceNotification', currentTime.toString());
+
+                        // 모달 띄우기
+                        $('#hotplaceModal').modal('show');
+
+                        console.log('알림 표시됨. 다음 알림은 1시간 후 가능합니다.');
+                    } else {
+                        console.log('핫플레이스 데이터 없음');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('핫플레이스 조회 오류:', error);
+                    console.error('응답 상태:', status);
+                    console.error('응답 내용:', xhr.responseText);
+                }
+            });
+        }
+
+        // 수동으로 알림 초기화 (테스트용)
+        function resetHotplaceNotification() {
+            localStorage.removeItem('lastHotplaceNotification');
+            console.log('알림 초기화 완료. 다시 알림을 받을 수 있습니다.');
+        }
+
+        // 다음 알림까지 남은 시간 확인
+        function checkRemainingTime() {
+            var lastNotificationTime = localStorage.getItem('lastHotplaceNotification');
+            if (!lastNotificationTime) {
+                console.log('알림 기록 없음. 즉시 알림 가능합니다.');
+                return;
+            }
+
+            var currentTime = new Date().getTime();
+            var timeDiff = currentTime - parseInt(lastNotificationTime);
+            var oneHour = 3600000;
+
+            if (timeDiff >= oneHour) {
+                console.log('알림 가능 상태입니다.');
+            } else {
+                var remainingTime = Math.ceil((oneHour - timeDiff) / 60000);
+                console.log('다음 알림까지 ' + remainingTime + '분 남았습니다.');
+            }
+        }
+    </script>
 
 </body>
 
