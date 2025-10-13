@@ -30,12 +30,6 @@
     <script src="/webjars/stomp-websocket/stomp.min.js"></script>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
@@ -66,7 +60,6 @@
             border-color: #333;
         }
 
-        /* Top Bar */
         .top-bar-wrap {
             background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -394,15 +387,25 @@
     </style>
 
 <div id="top-bar" class="is-top"><div class="very-top-bar">
-    <a href="<c:url value="/register"/>" data-text="회원가입" class="has-icon has-icon--before has-icon--visas has-icon--bg-light has-icon--bordered">회원가입</a>
-    <a href="<c:url value="/login"/>" data-text="로그인" class="has-icon has-icon--before has-icon--suitcase has-icon--bg-light has-icon--bordered">로그인</a>
+    <c:choose>
+        <c:when test="${sessionScope.cust.custId == null}">
+            <a href="<c:url value="/register"/>" data-text="회원가입" class="has-icon has-icon--before has-icon--visas has-icon--bg-light has-icon--bordered">회원가입</a>
+            <a href="<c:url value="/login"/>" data-text="로그인" class="has-icon has-icon--before has-icon--suitcase has-icon--bg-light has-icon--bordered">로그인</a>
+        </c:when>
+        <c:otherwise>
+            <a href="<c:url value="/custinfo?id=${sessionScope.cust.custId}"/> ">${sessionScope.cust.custId}</a>
+            <a href="<c:url value="/logout"/>" data-text="로그아웃" class="has-icon has-icon--before has-icon--suitcase has-icon--bg-light has-icon--bordered">로그아웃</a>
+        </c:otherwise>
+    </c:choose>
+
+
 </div>
     <div id="menu-background" style="display: none;"></div>
     <div class="top-bar-wrap">
         <div id="top-nav-wrap" aria-hidden="false" style="display: flex;">
             <nav id="top-menu" aria-label="Primary navigation" aria-hidden="true">
                 <ul class="top-menu-list">
-                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-60">
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-59">
                         <a href="<c:url value="/"/>" data-text="home">홈</a>
                     </li>
                     <li class="menu-item has-sub-menu">
@@ -418,7 +421,7 @@
                                                 </div>
                                                 <p class="h4 uppercase state-box-title">천안시</p>
                                             </a>
-                                            <a href="https://americathebeautiful.com/ko/destinations/alaska/" class="state-box">
+                                            <a href="<c:url value="/map/map1"/>" class="state-box">
                                                 <div class="thumb-wrap">
                                                     <img src="<c:url value='/img/jeju.jpg'/>" alt="제주도">
                                                 </div>
@@ -430,11 +433,11 @@
                             </div>
                         </div>
                     </li>
-                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-59">
-                        <a href="<c:url value="chart"/>" data-text="chart">차트</a>
-                    </li>
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-61">
-                        <a href="<c:url value="/chat"/>" data-text="chat">채팅</a>
+                        <a href="<c:url value="/chat/chat4"/>" data-text="chat">채팅</a>
+                    </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                        <a href="<c:url value="/springai1/ai1"/>" data-text="ai">AI</a>
                     </li>
                 </ul>
             </nav>
@@ -451,50 +454,53 @@
   </span>
             </h1>
             <div class="buttons-wrap">
-                <p class="ai-title animating-element animating-element--fadeUp --200 animate" data-wait-for="#header-image">여행 아이디어를 얻으세요</p>
                 <div class="fold-flex gapped buttons-wrap-inner animating-element animating-element--fadeUp --400 animate">
-                    <a href="javascript:void(0)" class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom" id="mindtrip-hero-button-1" data-prompt="Where can I find scenic overlooks in U.S. parks?" data-hint="" data-wait-for="#header-image">놀라운 전망을 보여주세요.</a> <a href="javascript:void(0)" class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom" id="mindtrip-hero-button-2" data-prompt="What are some of the top award-winning restaurants in the USA?" data-hint="" data-wait-for="#header-image">버킷리스트 레스토랑을 찾아보세요.</a> <a href="javascript:void(0)" class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom" id="mindtrip-hero-button-3" data-prompt="What are some family-friendly road trips in the USA?" data-hint="" data-wait-for="#header-image">가족과 함께하는 로드 트립을 계획하세요.</a> <a href="javascript:void(0)" class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom" id="mindtrip-hero-button-4" data-prompt=" What U.S. cities have the most exciting art scenes?" data-hint="" data-wait-for="#header-image">최고의 예술 여행지를 찾아보세요.</a>
+                    <a href="javascript:void(0)"
+                       class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom hero-ai-btn"
+                       data-question="천안 당일치기 코스 추천해줘">
+                        천안 당일치기 코스 추천해줘
+                    </a>
+
+                    <a href="javascript:void(0)"
+                       class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom hero-ai-btn"
+                       data-question="천안 1박2일 가족여행">
+                        천안 1박2일 가족여행
+                    </a>
+
+                    <a href="javascript:void(0)"
+                       class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom hero-ai-btn"
+                       data-question="제주도 2박3일 여행">
+                        제주도 2박3일 여행
+                    </a>
+
+                    <a href="javascript:void(0)"
+                       class="ai-title ai-title--dark button button--big button--nearwhite mg-bottom hero-ai-btn"
+                       data-question="제주도 당일치기 동부">
+                        제주도 당일치기 동부
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </header>
 <div style="position: absolute; top: 300px; height: 1px; pointer-events: none;"></div>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => {
-        const mt_buttons = document.querySelectorAll('[id^="mindtrip-hero-button-"][data-prompt]');
-        mt_buttons.forEach(prompt => {
-            if (prompt.dataset.prompt !== '') {
-                prompt.addEventListener('click', () => {
-                    window.mindtrip.showFrame('', {prompt: prompt.dataset.prompt, hint: prompt.dataset.hint});
-                })
-            }
-        })
-    })
-</script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.hero-ai-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const question = this.getAttribute('data-question');
+
+                        localStorage.setItem('aiQuestion', question);
+
+                        window.location.href ='<c:url value="/springai1/ai1"/>';
+                    });
+                });
+            });
+        </script>
     </div>
 </div>
 <body>
-<div id="top-bar" class="is-top">
-    <div class="very-top-bar">
-        <a href="<c:url value="/register"/>" data-text="회원가입">회원가입</a>
-        <a href="<c:url value="/login"/>" data-text="로그인">로그인</a>
-    </div>
-    <div id="menu-background" style="display: none;"></div>
-    <div class="top-bar-wrap">
-        <div id="top-nav-wrap" aria-hidden="false" style="display: flex;">
-            <nav id="top-menu" aria-label="Primary navigation">
-                <ul class="top-menu-list">
-                    <li><a href="<c:url value="/"/>">홈</a></li>
-                    <li><a href="<c:url value="/map/map1"/>">지도</a></li>
-                    <li><a href="<c:url value="/chart"/>">차트</a></li>
-                    <li><a href="<c:url value="/chat"/>">채팅</a></li>
-                </ul>
-            </nav>
-        </div>
-    </div>
-</div>
-
 <div class="container-fluid" style="margin-top: 20px;">
     <div class="row">
         <c:if test="${left != null}">
