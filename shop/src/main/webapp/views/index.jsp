@@ -415,13 +415,13 @@
                                 <div class="tabs-content">
                                     <div class="tab-panel fold-wrap lg is-active" role="tabpanel" id="panel-states" aria-labelledby="tab-1">
                                         <div class="state-boxes">
-                                            <a href="<c:url value="/map/map1"/>" class="state-box">
+                                            <a href="<c:url value="/map/map5"/>" class="state-box">
                                                 <div class="thumb-wrap">
                                                     <img src="<c:url value='/img/cheonan.jpg'/>" alt="천안시">
                                                 </div>
                                                 <p class="h4 uppercase state-box-title">천안시</p>
                                             </a>
-                                            <a href="<c:url value="/map/map1"/>" class="state-box">
+                                            <a href="<c:url value="/map/map5"/>" class="state-box">
                                                 <div class="thumb-wrap">
                                                     <img src="<c:url value='/img/jeju.jpg'/>" alt="제주도">
                                                 </div>

@@ -49,6 +49,15 @@
         height: 'auto'
       });
       calendar.render();
+      const savedQuestion = localStorage.getItem('aiQuestion');
+      if(savedQuestion) {
+        $('#question').val(savedQuestion);
+        localStorage.removeItem('aiQuestion');
+
+        setTimeout(() => {
+          this.send();
+        }, 500);
+      }
     },
 
     send:function(){
@@ -161,7 +170,7 @@
     </div>
   </div>
 
-    <div class="loading"><strong>일정을 만들고 있습니다...</strong></div>
-    <div id="calendar"></div>
-    <div id="result"></div>
+  <div class="loading"><strong>일정을 만들고 있습니다...</strong></div>
+  <div id="calendar"></div>
+  <div id="result"></div>
 </div>

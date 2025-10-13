@@ -5,15 +5,28 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <style>
-  #container {overflow:hidden; height:400px; position:relative;}
-  #mapWrapper {width:100%; height:100%; z-index:1;}
-  #rvWrapper {width:50%; height:100%; top:0; right:0; position:absolute; z-index:0;}
-  #container.view_roadview #mapWrapper {width: 50%;}
+  #container {
+    overflow: hidden;
+    height: 1000px;
+    position: relative;
+    margin: 150px auto;
+    max-width: 2500px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  }
+
+  #mapWrapper {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
 
   #map1 {
-    width:100%;
-    height:100%;
+    width: 100%;
+    height: 100%;
   }
+  #rvWrapper {width:50%; height:100%; top:0; right:0; position:absolute; z-index:0;}
+  #container.view_roadview #mapWrapper {width: 50%;}
 
   #roadviewControl {
     position:absolute; top:5px; left:5px; width:42px; height:42px; z-index: 1; cursor: pointer;
@@ -33,7 +46,7 @@
 
   #routeInfo {
     position: absolute;
-    top: 60px;
+    top: 70px;
     left: 10px;
     background: white;
     padding: 15px;
@@ -55,12 +68,10 @@
     font-size: 16px;
     color: #333;
     border-bottom: 2px solid #007bff;
-    padding-bottom: 8px;
   }
 
   #routeInfo .route-step {
     margin: 10px 0;
-    padding: 10px;
     background: #f8f9fa;
     border-radius: 5px;
     border-left: 4px solid #007bff;
@@ -341,8 +352,6 @@
         navigator.geolocation.getCurrentPosition((position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          $('#latlng').html(`위도: ${lat.toFixed(6)}, 경도: ${lng.toFixed(6)}`);
-
           this.currentPosition = new kakao.maps.LatLng(lat, lng);
           this.currentLocationMarker.setPosition(this.currentPosition);
           this.currentLocationMarker.setMap(this.map);
@@ -648,21 +657,6 @@
       geocoder.coord2Address(locPosition.getLng(), locPosition.getLat(), this.addDisplay2.bind(this));
     },
 
-    addDisplay1: function (result, status) {
-      if (status === kakao.maps.services.Status.OK) {
-        $('#addr1').html(result[0].address_name);
-        this.addr = result[0].address_name;
-      }
-    },
-
-    addDisplay2: function (result, status) {
-      if (status === kakao.maps.services.Status.OK) {
-        let detailAddr = result[0].road_address ? '<div>도로명주소: ' + result[0].road_address.address_name + '</div>' : '';
-        detailAddr += '<div>지번 주소: ' + result[0].address.address_name + '</div>';
-        $('#addr2').html(detailAddr);
-      }
-    },
-
     closeAllOverlays: function() {
       if (this.touristOverlays) {
         this.touristOverlays.forEach(overlay => {
@@ -819,7 +813,6 @@
 </script>
 
 <div class="col-sm-10">
-  <h2>대동여지도</h2>
   <h5 id="latlng"></h5>
   <h3 id="addr1"></h3>
   <h3 id="addr2"></h3>

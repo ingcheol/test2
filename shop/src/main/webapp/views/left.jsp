@@ -3,19 +3,19 @@
 <div class="col-sm-2">
   <ul class="nav nav-pills flex-column">
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/audio"/> "></a>
+      <a href="<c:url value="/audio"/> "></a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/pic"/> "></a>
+      <a href="<c:url value="/pic"/> "></a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/wt1"/>"></a>
+      <a href="<c:url value="/wt1"/>"></a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/wt2"/>"></a>
+      <a href="<c:url value="/wt2"/>"></a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/wt3"/>"></a>
+      <a href="<c:url value="/wt3"/>"></a>
     </li>
   </ul>
 </div>

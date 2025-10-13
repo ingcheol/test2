@@ -15,7 +15,7 @@
       <a href="<c:url value="/map/map4"/>"></a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="<c:url value="/map/map5"/>">map5</a>
+      <a href="<c:url value="/map/map5"/>"></a>
     </li>
   </ul>
 </div>
