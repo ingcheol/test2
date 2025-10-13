@@ -1,92 +1,324 @@
-
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
 <style>
-    #to {
-        width: 400px;
-        height: 200px;
-        overflow: auto;
-        border: 2px solid green;
-    }
+    .admin-webrtc-container{max-width:1200px;margin:0 auto;padding:20px}
+    .video-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:20px}
+    .video-wrapper{position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden}
+    .video-stream{width:100%;height:auto;aspect-ratio:16/9}
+    .video-label{position:absolute;bottom:10px;left:10px;color:white;background:rgba(0,0,0,0.5);padding:5px 10px;border-radius:4px}
+    .controls{display:flex;justify-content:center;gap:10px;margin:20px 0}
+    .control-button{padding:10px 20px;border-radius:4px;border:none;cursor:pointer;font-size:16px}
+    .start-call{background:#4CAF50;color:white}
+    .end-call{background:#f44336;color:white}
+    .connection-status{text-align:center;font-size:14px}
+
+    /* 채팅 스타일 */
+    .chat-container{margin-top:20px;border:1px solid #ddd;background:#b2c7d9;border-radius:8px;overflow:hidden}
+    .chat-header{background:#3a5a78;color:white;padding:15px;font-weight:bold}
+    .chat-messages{height:400px;overflow-y:auto;padding:20px;background:#b2c7d9}
+    .message{display:flex;margin-bottom:15px;align-items:flex-end}
+    .message.sent{justify-content:flex-end}
+    .message.received{justify-content:flex-start}
+    .message-bubble{max-width:60%;padding:10px 15px;border-radius:18px;word-wrap:break-word;position:relative}
+    .message.sent .message-bubble{background:#ffe600;color:#000}
+    .message.received .message-bubble{background:#fff;color:#000}
+    .message-sender{font-size:11px;color:#555;margin-bottom:3px;padding:0 5px}
+    .message.sent .message-sender{text-align:right}
+    .message.received .message-sender{text-align:left}
+    .message-time{font-size:10px;color:#666;margin:0 5px;align-self:flex-end;margin-bottom:5px}
+    .chat-input-area{display:flex;padding:15px;background:#fff;border-top:1px solid #ddd}
+    .chat-input-area input{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;outline:none;font-size:14px}
+    .chat-input-area button{margin-left:10px;padding:10px 20px;background:#ffe600;border:none;border-radius:20px;cursor:pointer;font-weight:bold}
+    .chat-input-area button:hover{background:#ffd700}
 </style>
+
 <script>
     chat = {
+        // Chat 변수
         id:'',
-        init:function(){
+        stompClient:null,
+
+        // WebRTC 변수
+        roomId:'1',
+        peerConnection:null,
+        localStream:null,
+        websocket:null,
+        configuration:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]},
+
+        init:async function(){
+            // Chat 초기화
             this.id = '${sessionScope.admin.adminId}';
-            this.connect();
-            $('#sendto').click(()=>{
-                var msg = JSON.stringify({
-                    'sendid' : this.id,
-                    'receiveid' : $('#target').val(),
-                    'content1' : $('#totext').val()
-                });
-                this.stompClient.send('/adminreceiveto', {}, msg);
+            this.connectChat();
+
+            // WebRTC 초기화
+            $('#startButton').click(()=>this.startCall());
+            $('#endButton').click(()=>this.endCall());
+            await this.startCam();
+            await this.connectWebRTC();
+            $('#userArea').hide();
+
+            // 채팅 전송
+            $('#sendto').click(()=>this.sendMessage());
+            $('#totext').keypress((e)=>{
+                if(e.which === 13){
+                    this.sendMessage();
+                }
             });
         },
-        connect:function(){
+
+        sendMessage:function(){
+            const msg = $('#totext').val().trim();
+            if(!msg) return;
+
+            var msgData = JSON.stringify({
+                'sendid':this.id,
+                'receiveid':$('#target').val(),
+                'content1':msg
+            });
+            this.stompClient.send('/adminreceiveto',{},msgData);
+
+            // 내가 보낸 메시지 표시
+            this.addMessage(msg, 'sent', this.id);
+            $('#totext').val('');
+        },
+
+        addMessage:function(content, type, sender){
+            const time = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+            let messageHtml = '<div class="message ' + type + '">';
+            if(type === 'received'){
+                messageHtml += '<div class="message-sender">' + sender + '</div>';
+            }
+            messageHtml += '<div class="message-bubble">' + content + '</div>';
+            messageHtml += '<div class="message-time">' + time + '</div>';
+            messageHtml += '</div>';
+
+            $('#chatMessages').append(messageHtml);
+            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+        },
+
+        // ===== Chat 관련 메서드 =====
+        connectChat:function(){
             let sid = this.id;
             let socket = new SockJS('${websocketurl}adminchat');
             this.stompClient = Stomp.over(socket);
-            this.setConnected(true);
-            this.stompClient.connect({}, function(frame) {
-                console.log('Connected: ' + frame);
-
-                this.subscribe('/adminsend/to/'+sid, function(msg) {
-                    $("#to").prepend(
-                        "<h4>" + JSON.parse(msg.body).sendid +":"+
-                        JSON.parse(msg.body).content1
-                        + "</h4>");
+            this.setChatConnected(true);
+            this.stompClient.connect({},function(frame){
+                console.log('Chat Connected: '+frame);
+                this.subscribe('/adminsend/to/'+sid,function(msg){
+                    const data = JSON.parse(msg.body);
+                    chat.addMessage(data.content1, 'received', data.sendid);
                 });
             });
         },
-        setConnected:function(connected){
-            if (connected) {
-                $("#status").text("Connected");
-            } else {
-                $("#status").text("Disconnected");
+
+        setChatConnected:function(connected){
+            $("#status").text(connected?"Connected":"Disconnected");
+        },
+
+        // ===== WebRTC 관련 메서드 =====
+        connectWebRTC:function(){
+            try{
+                this.websocket = new WebSocket('${websocketurl}signal');
+                this.websocket.onopen = ()=>{
+                    console.log('WebSocket connected');
+                    this.updateConnectionStatus('WebSocket Connected');
+                    this.sendSignalingMessage({type:'join',roomId:this.roomId});
+                };
+                this.setupWebSocketHandlers();
+            }catch(error){
+                console.error('Error initializing WebRTC:',error);
+                this.updateConnectionStatus('Error: '+error.message);
             }
+        },
+
+        startCam:async function(){
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video:{width:{ideal:1280},height:{ideal:720}},
+                audio:true
+            });
+            this.localStream = stream;
+            document.getElementById('localVideo').srcObject = stream;
+            document.getElementById('startButton').disabled = false;
+        },
+
+        startCall:async function(){
+            try{
+                if(!this.peerConnection){
+                    await this.startCam();
+                    await this.createPeerConnection();
+                    this.sendSignalingMessage({type:'join',roomId:this.roomId});
+                }
+                const offer = await this.peerConnection.createOffer();
+                await this.peerConnection.setLocalDescription(offer);
+                this.sendSignalingMessage({type:'offer',data:offer,roomId:this.roomId});
+                $('#startButton').hide();
+                $('#endButton').show();
+                $('#userArea').show();
+            }catch(error){
+                console.error('Error starting call:',error);
+                this.updateConnectionStatus('Error starting call');
+            }
+        },
+
+        endCall:function(){
+            if(this.localStream){
+                this.localStream.getTracks().forEach(track=>track.stop());
+            }
+            if(this.peerConnection){
+                this.peerConnection.close();
+                this.peerConnection = null;
+            }
+            document.getElementById('remoteVideo').srcObject = null;
+            $('#userArea').hide();
+            $('#startButton').show();
+            $('#endButton').hide();
+            this.updateConnectionStatus('Call Ended');
+            $('#user').html("접속이 끊어 졌습니다.");
+            this.sendSignalingMessage({type:'bye',roomId:this.roomId});
+        },
+
+        sendSignalingMessage:function(message){
+            if(this.websocket?.readyState === WebSocket.OPEN){
+                this.websocket.send(JSON.stringify(message));
+            }
+        },
+
+        setupWebSocketHandlers:function(){
+            this.websocket.onmessage = async(event)=>{
+                try{
+                    const message = JSON.parse(event.data);
+                    console.log('Received message:',message.type);
+                    switch(message.type){
+                        case 'offer':
+                            if(!this.peerConnection){
+                                await this.createPeerConnection();
+                            }
+                            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(message.data));
+                            const answer = await this.peerConnection.createAnswer();
+                            await this.peerConnection.setLocalDescription(answer);
+                            this.sendSignalingMessage({type:'answer',data:answer,roomId:this.roomId});
+                            break;
+                        case 'join':
+                            $('#user').html("사용자가 방문 하였습니다. Start Call 버튼을 누르세요");
+                            $('#userArea').show();
+                            break;
+                        case 'bye':
+                            $('#user').html("접속이 끊어 졌습니다.");
+                            document.getElementById('remoteVideo').srcObject = null;
+                            $('#userArea').hide();
+                            break;
+                        case 'answer':
+                            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(message.data));
+                            break;
+                        case 'ice-candidate':
+                            $('#startButton').hide();
+                            $('#endButton').show();
+                            await this.peerConnection.addIceCandidate(new RTCIceCandidate(message.data));
+                            $('#user').html("접속 상태 입니다.");
+                            break;
+                    }
+                }catch(error){
+                    console.error('Error handling WebSocket message:',error);
+                }
+            };
+            this.websocket.onclose = ()=>{
+                console.log('WebSocket Disconnected');
+                this.updateConnectionStatus('WebSocket Disconnected');
+            };
+            this.websocket.onerror = (error)=>{
+                console.error('WebSocket error:',error);
+                this.updateConnectionStatus('WebSocket Error');
+            };
+        },
+
+        createPeerConnection:function(){
+            this.peerConnection = new RTCPeerConnection(this.configuration);
+            this.localStream.getTracks().forEach(track=>{
+                this.peerConnection.addTrack(track,this.localStream);
+            });
+            this.peerConnection.ontrack = (event)=>{
+                if(document.getElementById('remoteVideo') && event.streams[0]){
+                    document.getElementById('remoteVideo').srcObject = event.streams[0];
+                }
+            };
+            this.peerConnection.onicecandidate = (event)=>{
+                if(event.candidate){
+                    this.sendSignalingMessage({type:'ice-candidate',data:event.candidate,roomId:this.roomId});
+                }
+            };
+            this.peerConnection.onconnectionstatechange = ()=>{
+                this.updateConnectionStatus('Connection: '+this.peerConnection.connectionState);
+            };
+            return this.peerConnection;
+        },
+
+        updateConnectionStatus:function(status){
+            document.getElementById('connectionStatus').textContent = 'Status: '+status;
         }
     }
 
-    $(()=>{
-        chat.init();
-    });
+    $(()=>chat.init());
+
+    window.onbeforeunload = function(e){
+        e.preventDefault();
+        chat.endCall();
+    };
 </script>
 
 <!-- Begin Page Content -->
 <div class="container-fluid">
-
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Chat</h1>
+        <h1 class="h3 mb-0 text-gray-800">Chat - 채팅 & 영상통화</h1>
     </div>
 
     <!-- Content Row -->
-    <div class="row d-none d-md-flex">
-        <div class="col-xl-8 col-lg-7">
+    <div class="row">
+        <div class="col-xl-12">
             <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Customer Chat</h6>
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Admin Chat & Video</h6>
                 </div>
-                <!-- Card Body -->
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <div class="col-sm-5">
-                            <h1 id="user_id">${sessionScope.admin.adminId}</h1>
-                            <H1 id="status">Status</H1>
+                    <h4 id="user">Start Call 버튼을 누르세요</h4>
 
-                            <h3>To</h3>
-                            <input type="text" id="target" value="id07">
-                            <input type="text" id="totext"><button id="sendto">Send</button>
-                            <div id="to"></div>
+                    <!-- 영상통화 영역 -->
+                    <div class="admin-webrtc-container">
+                        <div class="video-grid">
+                            <div class="video-wrapper">
+                                <video id="localVideo" autoplay playsinline muted class="video-stream"></video>
+                                <div class="video-label">Admin Stream</div>
+                            </div>
+                            <div class="video-wrapper" id="userArea">
+                                <video id="remoteVideo" autoplay playsinline class="video-stream"></video>
+                                <div class="video-label">User Stream</div>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button id="startButton" class="control-button start-call">Start Call</button>
+                            <button id="endButton" class="control-button end-call" style="display:none;">End Call</button>
+                        </div>
+                        <div class="connection-status" id="connectionStatus">Status: Disconnected</div>
+                    </div>
 
+                    <!-- 채팅 영역 -->
+                    <div class="chat-container">
+                        <div class="chat-header">
+                            💬 Chat with Customer
+                            <span style="float:right;font-size:12px;font-weight:normal">Admin: ${sessionScope.admin.adminId} | Status: <span id="status">Disconnected</span></span>
+                        </div>
+                        <div class="chat-messages" id="chatMessages">
+                            <!-- 메시지가 여기에 표시됩니다 -->
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="target" value="id07" placeholder="받는 사람" style="max-width:150px;margin-right:10px">
+                            <input type="text" id="totext" placeholder="메시지를 입력하세요..." autocomplete="off">
+                            <button id="sendto">전송</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
