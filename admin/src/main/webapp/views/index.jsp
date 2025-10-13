@@ -1,5 +1,4 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<!-- JSTL -->
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <!DOCTYPE html>
@@ -209,14 +208,14 @@
                         <span>chat</span></a>
                 </li>
                 <li class="nav-item active">
-                    <a class="nav-link" href="<c:url value="/chart" />">
+                    <a class="nav-link" href="<c:url value="/chart"/>">
                         <i class="fas fa-fw fa-tachometer-alt"></i>
                         <span>chart</span></a>
                 </li>
 
                 <c:if test="${sessionScope.admin.adminRole == 'super'}">
                     <li class="nav-item active">
-                        <a class="nav-link" href="<c:url value="/chart" />">
+                        <a class="nav-link" href="<c:url value="/admin"/>">
                             <i class="fas fa-fw fa-tachometer-alt"></i>
                             <span>admin</span></a>
                     </li>
@@ -298,7 +297,7 @@
                     <!-- Topbar Search -->
                     <form class="form-inline d-none d-sm-block" >
                         <div class="form-group">
-                            <label for="sel1" class="form-control mb-2 mr-sm-2">검생대상 선택</label>
+                            <label for="sel1" class="form-control mb-2 mr-sm-2">검색대상 선택</label>
                             <select class="form-control mb-2 mr-sm-2" id="sel1">
                                 <option value="#">Select</option>
                                 <option value="c" <c:if test="${searchtype == 'cust'}">selected</c:if> >Cust</option>
