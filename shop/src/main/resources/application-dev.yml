@@ -23,15 +23,25 @@ spring:
       suffix: .jsp
   datasource:
     #url: jdbc:mysql://127.0.0.1:3306/shopdb?serverTimezone=Asia/Seoul
-#    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
-#    url: jdbc:log4jdbc:mysql://127.0.0.1:3306/shopdb?characterEncoding=utf8
-#    username: post
-#    password: ENC(idIWCdznEM3ggslDeTmLJw==)
-#    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+    #    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+    #    url: jdbc:log4jdbc:mysql://127.0.0.1:3306/shopdb?characterEncoding=utf8
+    #    username: post
+    #    password: ENC(idIWCdznEM3ggslDeTmLJw==)
+    #    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
     url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
     password: ENC(idIWCdznEM3ggslDeTmLJw==)
-
+  ai:
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+    openai:
+      api-key: ENC(YGnlvK+vjoazwXyKJlbxMu8IUcmwmCeujtfx0YgSGEJf2qAXvybh5qHuW7UY+TyydjIUMd8Ua0RpESDOtptbCXMc2V+2BU31TmguMvoLK6mN61RgdQHzuQy+Ul4m13hH56w1XxQ4CPO2Kg/uRlyJZYpkD+rs8MXjKyNyfPeVHVHWJlo+kFk8G4cYaaDDTOHHkntOhSe3i1BLNj62JVfAp5iaWgNAb54hN5U62+L27AE=)
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.1
+          max_tokens: 1000
 mybatis:
   type-aliases-package: edu.sm.app.dto
   mapper-locations: classpath:/mapper/*.xml
@@ -55,15 +65,6 @@ app:
     algo: PBEWithMD5AndDES
     wkey: ENC(2hVNthZA5KlX7Hi6ow3pPTHPbML3w9MiiFjcZC76z1gV/iHPACQMY89q0CfK/knK0F1bFQuQ2tsarrZVbOkvjFbkkVzTOyYtCgo2qza+hu6k9WBQrShR7blvGPohoWQdjRe5ahrC8rbLhrhC7MHZlg==)
     owkey: ENC(vIqd9CSeOJ2B+RNZB8q8uX2gqVeotK1BVjLTnpvApIu0QKfrK4PIS+zKhZuQbERZ)
-
-
-
-
-
-
-
-
-
 
 
 
