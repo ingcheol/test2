@@ -437,7 +437,10 @@
                         <a href="<c:url value="/chat/chat4"/>" data-text="chat">채팅</a>
                     </li>
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
-                        <a href="<c:url value="/springai1/ai1"/>" data-text="ai">AI</a>
+                        <a href="<c:url value="/springai1/ai1"/>" data-text="ai">여행 일정 AI</a>
+                    </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                      <a href="<c:url value="/springai3/ai1"/>">작품 해설 AI</a>
                     </li>
                 </ul>
             </nav>
