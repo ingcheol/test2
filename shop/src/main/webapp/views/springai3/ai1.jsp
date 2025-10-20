@@ -134,7 +134,7 @@
                 audioPlayer.src = "data:audio/mp3;base64," + answerJson.audio;
 
                 audioPlayer.addEventListener("play", () => {
-                    let uuid = this.makeUi("result", this.currentLanguage);
+                    let uuid = this.makeUi("result");
                     let answer = answerJson.text;
                     $('#'+uuid).html(answer);
                 }, { once: true });
@@ -162,20 +162,12 @@
             }
         },
 
-        makeUi:function(target, lang){
+        makeUi:function(target){
             let uuid = "id-" + crypto.randomUUID();
-
-            const headers = {
-                'ko': 'AI 해설',
-                'en': 'AI Commentary',
-                'ja': 'AI解説',
-                'zh': 'AI解说'
-            };
 
             let aForm = `
               <div class="media border p-3 mb-2">
                 <div class="media-body">
-                  <h6>🎨 ${headers[lang] || headers['ko']}</h6>
                   <pre id="`+uuid+`" style="background-color: #f8f9fa; padding: 10px; border-radius: 5px;"></pre>
                 </div>
               </div>

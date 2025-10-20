@@ -160,16 +160,16 @@
     </h5>
     <div class="btn-group-wrap text-center">
       <button class="btn btn-success lang-btn" data-lang="ko">
-        🇰🇷 한국어
+        한국어
       </button>
       <button class="btn btn-success lang-btn active" data-lang="en">
-        🇺🇸 English
+        English
       </button>
       <button class="btn btn-success lang-btn" data-lang="ja">
-        🇯🇵 日本語
+        日本語
       </button>
       <button class="btn btn-success lang-btn" data-lang="zh">
-        🇨🇳 中文
+        中文
       </button>
     </div>
     <div class="alert alert-light mt-3 mb-0" role="alert">
