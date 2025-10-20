@@ -13,7 +13,13 @@
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=8ebb7e444a8cd5d1f3bbc02bbacb744a&libraries=services"></script>
-    <%-- highchart lib   --%>
+
+<%--  ai관련--%>
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
+  <link href="<c:url value="/css/springai.css"/>" rel="stylesheet" />
+  <script src="<c:url value="/js/springai.js"/>"></script>
+
+<%-- highchart lib   --%>
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/modules/wordcloud.js"></script>
     <script src="https://code.highcharts.com/highcharts-3d.js"></script>
@@ -441,6 +447,9 @@
                     </li>
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
                       <a href="<c:url value="/springai3/ai1"/>">작품 해설 AI</a>
+                    </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                      <a href="<c:url value="/springai3/ai2"/>">실시간 번역 AI</a>
                     </li>
                 </ul>
             </nav>
