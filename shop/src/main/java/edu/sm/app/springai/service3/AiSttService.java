@@ -41,6 +41,86 @@ public class AiSttService {
     this.openAiAudioSpeechModel = openAiAudioSpeechModel;
   }
 
+  public Map<String, String> translateVoice(MultipartFile audioFile, String targetLang) throws IOException {
+    // 1. 음성을 텍스트로 변환 (언어 자동 감지)
+    Path tempFile = Files.createTempFile("multipart-", audioFile.getOriginalFilename());
+    audioFile.transferTo(tempFile);
+    Resource audioResource = new FileSystemResource(tempFile);
+
+    OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+        .model("whisper-1")
+        .build();
+
+    AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(audioResource, options);
+    AudioTranscriptionResponse response = openAiAudioTranscriptionModel.call(prompt);
+    String originalText = response.getResult().getOutput();
+
+    log.info("인식된 텍스트: " + originalText);
+
+    // 2. 언어 감지
+    String detectPrompt = """
+        Detect the language of this text and return ONLY the language code.
+        Return "ko" for Korean, "en" for English, "ja" for Japanese, "zh" for Chinese.
+        Only return the 2-letter code, nothing else.
+        
+        Text: %s
+        """.formatted(originalText);
+
+    String detectedLang = chatClient.prompt()
+        .user(detectPrompt)
+        .call()
+        .content()
+        .trim()
+        .toLowerCase();
+
+    if (!detectedLang.matches("ko|en|ja|zh")) {
+      detectedLang = "en";
+    }
+
+    log.info("감지된 언어: " + detectedLang + ", 번역 대상 언어: " + targetLang);
+
+    // 3. 번역 (사용자가 선택한 언어로)
+    Map<String, String> langNames = new HashMap<>();
+    langNames.put("ko", "Korean");
+    langNames.put("en", "English");
+    langNames.put("ja", "Japanese");
+    langNames.put("zh", "Chinese");
+
+    String translatePrompt = """
+        You are a professional translator.
+        Translate the following text from %s to %s.
+        Provide ONLY the translation without any explanations.
+        Make it sound natural and conversational.
+        Do not use any markdown formatting.
+        
+        Text: %s
+        """.formatted(langNames.get(detectedLang), langNames.get(targetLang), originalText);
+
+    String translatedText = chatClient.prompt()
+        .user(translatePrompt)
+        .call()
+        .content()
+        .trim();
+
+    log.info("번역된 텍스트: " + translatedText);
+
+    // 4. TTS
+    byte[] audioBytes = tts(translatedText);
+    String base64Audio = Base64.getEncoder().encodeToString(audioBytes);
+
+    // 5. 결과 반환
+    Map<String, String> result = new HashMap<>();
+    result.put("originalText", originalText);
+    result.put("translatedText", translatedText);
+    result.put("detectedLang", detectedLang);
+    result.put("targetLang", targetLang);
+    result.put("audio", base64Audio);
+
+    Files.deleteIfExists(tempFile);
+
+    return result;
+  }
+
   // ##### 메소드 #####
   public String stt(MultipartFile multipartFile) throws IOException {
 

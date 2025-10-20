@@ -54,6 +54,7 @@ logging:
 # Application Config
 app:
   url:
+    adminserver: https://127.0.0.1:8444/
     websocketurl: https://127.0.0.1:8443/
   dir:
     imgsdir: file:///C:/smspring/imgs/     # 화면 출력 용

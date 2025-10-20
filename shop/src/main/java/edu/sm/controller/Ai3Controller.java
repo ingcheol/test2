@@ -61,6 +61,14 @@ public class Ai3Controller {
     return response;
   }
 
+  @RequestMapping(value = "/translate")
+  public Map<String, String> translate(
+      @RequestParam("speech") MultipartFile speech,
+      @RequestParam(value = "targetLang", defaultValue = "en") String targetLang
+  ) throws IOException {
+    Map<String, String> result = aisttService.translateVoice(speech, targetLang);
+    return result;
+  }
 
   @RequestMapping(value = "/chat-text")
   public Map<String, String> chatText(@RequestParam("question") String question) {
