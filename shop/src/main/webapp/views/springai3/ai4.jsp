@@ -110,7 +110,14 @@
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                    right: 'dayGridMonth,listAll,listMonth'
+                },
+                views: {
+                    listAll: {
+                        type: 'list',
+                        duration: { years: 1 }, // 1년치 데이터 표시
+                        buttonText: 'listYear'
+                    }
                 },
                 editable: true,
                 events: [],
@@ -340,8 +347,6 @@
                         transaction.memo = transaction.memo + ' (' + this.formatCurrency(originalAmount, originalCurrency) + ')';
                         transaction.amount = krwAmount;
                         transaction.currency = 'KRW';
-
-                        console.log('환율 변환: ' + originalAmount + ' ' + originalCurrency + ' → ' + krwAmount + ' KRW');
                     }
 
                     this.addEventToCalendar(transaction);
