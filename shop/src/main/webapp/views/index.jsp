@@ -19,6 +19,10 @@
   <link href="<c:url value="/css/springai.css"/>" rel="stylesheet" />
   <script src="<c:url value="/js/springai.js"/>"></script>
 
+<%--  fullcalendar--%>
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
 <%-- highchart lib   --%>
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/modules/wordcloud.js"></script>
@@ -450,6 +454,12 @@
                     </li>
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
                       <a href="<c:url value="/springai3/ai2"/>">실시간 번역 AI</a>
+                    </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                      <a href="<c:url value="/springai3/ai3"/>">현지 음식 추천 AI</a>
+                    </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                      <a href="<c:url value="/springai3/ai4"/>">가계부 AI</a>
                     </li>
                 </ul>
             </nav>
