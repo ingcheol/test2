@@ -155,7 +155,7 @@
 
   <!-- 언어 선택 섹션 -->
   <div class="language-selector">
-    <h5 class="text-white mb-3">
+    <h5 class="bi bi-translate">
       <i class="bi bi-translate"></i> 번역할 언어를 선택하세요
     </h5>
     <div class="btn-group-wrap text-center">
