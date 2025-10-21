@@ -52,55 +52,6 @@
     border-color: #155724;
   }
 
-  .recommendation-section {
-    background: #fff3cd;
-    border-left: 4px solid #ffc107;
-    padding: 15px;
-    margin: 15px 0;
-    border-radius: 5px;
-  }
-
-  .recommendation-section h5 {
-    margin-bottom: 10px;
-    color: #856404;
-  }
-
-  .recommendation-section p {
-    margin: 5px 0;
-    line-height: 1.6;
-  }
-
-  .recommendation-item {
-    background: white;
-    border-radius: 8px;
-    padding: 10px;
-    margin: 10px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .recommendation-item h6 {
-    color: #28a745;
-    margin-bottom: 5px;
-  }
-
-  .location-info-section {
-    background: #d1ecf1;
-    border-left: 4px solid #0c5460;
-    padding: 15px;
-    margin: 15px 0;
-    border-radius: 5px;
-  }
-
-  .location-info-section h5 {
-    margin-bottom: 10px;
-    color: #0c5460;
-  }
-
-  .location-info-section p {
-    margin: 8px 0;
-    line-height: 1.6;
-  }
-
   .analyzing-badge {
     display: inline-block;
     background: #17a2b8;
@@ -234,7 +185,7 @@
                   <small class="text-muted">${sourceLabel}</small>
                   <img src="`+imageUrl+`" alt="분석 이미지" class="img-fluid" style="max-width:400px; border:1px solid #ddd; border-radius:5px;" />
                   <div class="mt-2">
-                    <span class="analyzing-badge">🔍 AI 이미지 분석 중...</span>
+                    <span class="analyzing-badge">AI 이미지 분석 중...</span>
                   </div>
                 </div>
               </div>
@@ -300,148 +251,12 @@
     },
 
     parseAndDisplayRecommendations: function(text, parentUuid) {
-      // [장소명], [위치], [연락처], [신뢰도] 정보 추출
-      const locationInfo = {
-        name: null,
-        address: null,
-        contact: null,
-        confidence: null
-      };
-
-      const locationPatterns = {
-        ko: {
-          name: /\[장소명\][:\s]*([^\n\[]+)/i,
-          address: /\[위치\][:\s]*([^\n\[]+)/i,
-          contact: /\[연락처\][:\s]*([^\n\[]+)/i,
-          confidence: /\[신뢰도\][:\s]*([^\n\[]+)/i
-        },
-        en: {
-          name: /\[Location Name\][:\s]*([^\n\[]+)/i,
-          address: /\[Address\][:\s]*([^\n\[]+)/i,
-          contact: /\[Contact\][:\s]*([^\n\[]+)/i,
-          confidence: /\[Confidence\][:\s]*([^\n\[]+)/i
-        },
-        ja: {
-          name: /\[場所名\][:\s]*([^\n\[]+)/i,
-          address: /\[住所\][:\s]*([^\n\[]+)/i,
-          contact: /\[連絡先\][:\s]*([^\n\[]+)/i,
-          confidence: /\[信頼度\][:\s]*([^\n\[]+)/i
-        },
-        zh: {
-          name: /\[地点名称\][:\s]*([^\n\[]+)/i,
-          address: /\[地址\][:\s]*([^\n\[]+)/i,
-          contact: /\[联系方式\][:\s]*([^\n\[]+)/i,
-          confidence: /\[可信度\][:\s]*([^\n\[]+)/i
-        }
-      };
-
-      // 장소 정보 파싱
-      Object.keys(locationPatterns).forEach(lang => {
-        if (!locationInfo.name) {
-          const nameMatch = text.match(locationPatterns[lang].name);
-          if (nameMatch) locationInfo.name = nameMatch[1].trim();
-        }
-        if (!locationInfo.address) {
-          const addressMatch = text.match(locationPatterns[lang].address);
-          if (addressMatch) locationInfo.address = addressMatch[1].trim();
-        }
-        if (!locationInfo.contact) {
-          const contactMatch = text.match(locationPatterns[lang].contact);
-          if (contactMatch) locationInfo.contact = contactMatch[1].trim();
-        }
-        if (!locationInfo.confidence) {
-          const confidenceMatch = text.match(locationPatterns[lang].confidence);
-          if (confidenceMatch) locationInfo.confidence = confidenceMatch[1].trim();
-        }
-      });
-
-      console.log('장소 정보:', locationInfo);
-
-      // [추천1], [추천2], [추천3] 패턴 찾기
-      const patterns = [
-        /\[추천(\d+)\][:\s]*([^\n\[]+)/g,
-        /\[Recommendation(\d+)\][:\s]*([^\n\[]+)/gi,
-        /\[推薦(\d+)\][:\s]*([^\n\[]+)/g,
-        /\[推荐(\d+)\][:\s]*([^\n\[]+)/g
-      ];
-
-      let recommendations = [];
-      for (let pattern of patterns) {
-        let match;
-        while ((match = pattern.exec(text)) !== null) {
-          recommendations.push({
-            number: match[1],
-            content: match[2].trim()
-          });
-        }
-      }
-
-      console.log('찾은 추천:', recommendations);
-
-      // 장소 정보 섹션 생성
-      if (locationInfo.name || locationInfo.address || locationInfo.contact) {
-        let locInfoId = "loc-info-" + crypto.randomUUID();
-        let confidenceBadge = '';
-
-        if (locationInfo.confidence) {
-          let badgeColor = '#6c757d';
-          if (locationInfo.confidence.includes('높음') || locationInfo.confidence.includes('High') || locationInfo.confidence.includes('高')) {
-            badgeColor = '#28a745';
-          } else if (locationInfo.confidence.includes('중간') || locationInfo.confidence.includes('Medium') || locationInfo.confidence.includes('中')) {
-            badgeColor = '#ffc107';
-          } else if (locationInfo.confidence.includes('낮음') || locationInfo.confidence.includes('Low') || locationInfo.confidence.includes('低')) {
-            badgeColor = '#dc3545';
-          }
-          confidenceBadge = `<span style="display:inline-block; background:${badgeColor}; color:white; padding:3px 8px; border-radius:3px; font-size:12px; margin-left:10px;">신뢰도: ${locationInfo.confidence}</span>`;
-        }
-
-        let locInfoHtml = `
-                    <div class="location-info-section" id="${locInfoId}">
-                        <h5>📍 장소 정보 ${confidenceBadge}</h5>
-                `;
-
-        if (locationInfo.name && !locationInfo.name.includes('특정 불가') && !locationInfo.name.includes('Cannot specify')) {
-          locInfoHtml += `<p><strong>📌 장소명:</strong> ${locationInfo.name}</p>`;
-        }
-        if (locationInfo.address) {
-          locInfoHtml += `<p><strong>🗺️ 주소:</strong> ${locationInfo.address}</p>`;
-        }
-        if (locationInfo.contact) {
-          locInfoHtml += `<p><strong>📞 연락처:</strong> ${locationInfo.contact}</p>`;
-        }
-
-        locInfoHtml += `</div>`;
-        $('#'+parentUuid).after(locInfoHtml);
-      }
-
-      // 추천 섹션 생성
-      if (recommendations.length > 0) {
-        let recSectionId = "rec-section-" + crypto.randomUUID();
-        let recSection = `
-                    <div class="recommendation-section" id="${recSectionId}">
-                        <h5>🎯 추천 항목</h5>
-                        <div id="rec-items-${recSectionId}"></div>
-                    </div>
-                `;
-        $('#'+parentUuid).after(recSection);
-
-        // 각 추천 항목 표시
-        let recHtml = '';
-        recommendations.forEach((rec) => {
-          recHtml += `
-                        <div class="recommendation-item">
-                            <h6>✨ 추천 ${rec.number}</h6>
-                            <p>${rec.content}</p>
-                        </div>
-                    `;
-        });
-
-        $('#rec-items-'+recSectionId).html(recHtml);
-      }
+      // 이 함수는 더 이상 장소 정보와 추천 항목을 표시하지 않습니다
+      console.log('분석 완료');
     },
 
     makeUi:function(target){
-      let uuid = "id-" + crypto.randomUUID();
+      let uuid = "id-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9);
 
       let aForm = `
               <div class="media border p-3 mb-2">
@@ -468,7 +283,7 @@
     <div class="col-sm-8">
       <!-- 언어 선택 영역 -->
       <div class="language-selector">
-        <label for="language">Select Language</label>
+        <label for="language">Select Language / 언어 선택</label>
         <select id="language" class="form-control">
           <option value="ko">한국어 (Korean)</option>
           <option value="en">English</option>
