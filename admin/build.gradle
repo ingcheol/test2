@@ -5,7 +5,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'edu.sm'
+group = 'eud.sm'
 version = '0.0.1-SNAPSHOT'
 description = 'admin'
 
@@ -26,12 +26,28 @@ repositories {
     maven { url = 'https://repo.spring.io/snapshot' }
 }
 
+ext {
+    set('springAiVersion', "1.0.2")
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'
     providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+
+    //SpringAI lib
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+    implementation 'org.springframework.ai:spring-ai-tika-document-reader'
+    implementation 'org.springframework.ai:spring-ai-jsoup-document-reader'
+    implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
+    implementation 'org.springframework.ai:spring-ai-rag'
+
+
 
     //websocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
@@ -42,10 +58,10 @@ dependencies {
 
     // Properties Encryption
     implementation 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.3'
+
     // Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
     testImplementation 'org.springframework.security:spring-security-test'
-
 
     // logback
     implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16'
@@ -59,15 +75,13 @@ dependencies {
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'org.postgresql:postgresql'
+
     // JSON
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
     // pageing
     implementation 'com.github.pagehelper:pagehelper-spring-boot-starter:1.4.6'
-
     //openCsv 라이브러리
     implementation 'com.opencsv:opencsv:5.5.2'
-
-
     // test
     testImplementation 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
@@ -75,6 +89,14 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}
+
+
 
 tasks.named('test') {
     useJUnitPlatform()
