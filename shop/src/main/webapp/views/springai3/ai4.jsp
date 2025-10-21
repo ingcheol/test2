@@ -72,6 +72,7 @@
             this.initFilters();
             this.initModal();
             this.startQuestion();
+            this.loadExchangeRates();
 
             $('#send').click(() => {
                 this.send();
@@ -322,9 +323,27 @@
                     throw new Error('AI가 날짜와 금액을 추출하지 못했습니다.');
                 }
 
+                // 환율 변환 처리
                 let summaries = [];
                 for (let i = 0; i < validTransactions.length; i++) {
                     let transaction = validTransactions[i];
+
+                    // 외화인 경우 원화로 변환
+                    if (transaction.currency && transaction.currency !== 'KRW') {
+                        let originalAmount = transaction.amount;
+                        let originalCurrency = transaction.currency;
+
+                        // 원화로 변환
+                        let krwAmount = this.convertToKRW(originalAmount, originalCurrency);
+
+                        // 메모에 원래 금액 추가
+                        transaction.memo = transaction.memo + ' (' + this.formatCurrency(originalAmount, originalCurrency) + ')';
+                        transaction.amount = krwAmount;
+                        transaction.currency = 'KRW';
+
+                        console.log('환율 변환: ' + originalAmount + ' ' + originalCurrency + ' → ' + krwAmount + ' KRW');
+                    }
+
                     this.addEventToCalendar(transaction);
                     let typeStr = transaction.type === 'expense' ? '지출' : '수입';
                     summaries.push(transaction.category + ' ' + transaction.amount.toLocaleString() + '원 ' + typeStr);
@@ -343,6 +362,23 @@
                 confirmationMsg = '오류가 발생했습니다: ' + error.message + ' (예: 오늘 식비 5천원 지출)';
             } finally {
                 await this.speak(confirmationMsg);
+            }
+        },
+
+// 통화 포맷팅 함수 추가
+        formatCurrency: function(amount, currency) {
+            switch (currency) {
+                case 'USD': return '$' + amount;
+                case 'JPY': return '¥' + Math.round(amount);
+                case 'EUR': return '€' + amount;
+                case 'CNY': return '¥' + amount;
+                case 'VND': return Math.round(amount) + '₫';
+                case 'THB': return '฿' + amount;
+                case 'PHP': return '₱' + amount;
+                case 'TWD': return 'NT$' + amount;
+                case 'HKD': return 'HK$' + amount;
+                case 'AUD': return 'A$' + amount;
+                default: return amount + ' ' + currency;
             }
         },
 
@@ -479,7 +515,90 @@
                 '</div>' +
                 '</div>';
             $('#chat-log').prepend(aForm);
+        },
+
+        // 환율 정보 로드
+        loadExchangeRates: async function() {
+            try {
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/KRW');
+                const data = await response.json();
+
+                // 원화 기준으로 10가지 주요 통화 환율 계산
+                this.exchangeRates = {
+                    USD: (1 / data.rates.USD).toFixed(2),      // 미국 달러
+                    JPY: (100 / data.rates.JPY).toFixed(2),    // 일본 엔 (100엔 기준)
+                    EUR: (1 / data.rates.EUR).toFixed(2),      // 유로
+                    CNY: (1 / data.rates.CNY).toFixed(2),      // 중국 위안
+                    VND: (1000 / data.rates.VND).toFixed(2),   // 베트남 동 (1000동 기준)
+                    THB: (1 / data.rates.THB).toFixed(2),      // 태국 바트
+                    PHP: (1 / data.rates.PHP).toFixed(2),      // 필리핀 페소
+                    TWD: (1 / data.rates.TWD).toFixed(2),      // 대만 달러
+                    HKD: (1 / data.rates.HKD).toFixed(2),      // 홍콩 달러
+                    AUD: (1 / data.rates.AUD).toFixed(2)       // 호주 달러
+                };
+
+                this.displayExchangeRates();
+
+            } catch (error) {
+                console.error('환율 정보 로드 실패:', error);
+                $('#exchangeRates').html('<div class="col-sm-12 text-danger text-center">환율 정보를 불러올 수 없습니다.</div>');
+            }
+        },
+
+// 환율 정보 화면에 표시
+        displayExchangeRates: function() {
+            let html = '';
+            let currencies = [
+                { code: 'USD', symbol: '$', name: '미국 달러', unit: 1 },
+                { code: 'JPY', symbol: '¥', name: '일본 엔', unit: 100 },
+                { code: 'EUR', symbol: '€', name: '유로', unit: 1 },
+                { code: 'CNY', symbol: '¥', name: '중국 위안', unit: 1 },
+                { code: 'VND', symbol: '₫', name: '베트남 동', unit: 1000 },
+                { code: 'THB', symbol: '฿', name: '태국 바트', unit: 1 },
+                { code: 'PHP', symbol: '₱', name: '필리핀 페소', unit: 1 },
+                { code: 'TWD', symbol: 'NT$', name: '대만 달러', unit: 1 },
+                { code: 'HKD', symbol: 'HK$', name: '홍콩 달러', unit: 1 },
+                { code: 'AUD', symbol: 'A$', name: '호주 달러', unit: 1 }
+            ];
+
+            currencies.forEach(currency => {
+                let rate = this.exchangeRates[currency.code];
+                let unitText = currency.unit > 1 ? currency.unit + ' ' : '';
+                html += '<div class="col-sm-6 col-md-4 col-lg-3 mb-2">' +
+                    '<div class="border rounded p-2 text-center" style="height: 100%;">' +
+                    '<strong>' + currency.symbol + ' ' + unitText + '=</strong><br>' +
+                    '<span class="text-primary" style="font-size: 1.1em;">' + parseFloat(rate).toLocaleString() + '원</span>' +
+                    '<br><small class="text-muted">' + currency.name + '</small>' +
+                    '</div>' +
+                    '</div>';
+            });
+
+            $('#exchangeRates').html(html);
+
+            let now = new Date();
+            $('#rateUpdateTime').text('업데이트: ' + now.toLocaleString('ko-KR'));
+        },
+
+        // 외화를 원화로 변환
+        convertToKRW: function(amount, currency) {
+            currency = currency.toUpperCase();
+
+            if (this.exchangeRates[currency]) {
+                let rate = parseFloat(this.exchangeRates[currency]);
+
+                // JPY는 100엔 기준, VND는 1000동 기준
+                if (currency === 'JPY') {
+                    return Math.round(amount * rate / 100);
+                } else if (currency === 'VND') {
+                    return Math.round(amount * rate / 1000);
+                }
+
+                return Math.round(amount * rate);
+            }
+
+            return amount;
         }
+
     };
 
     $(() => {
@@ -489,8 +608,8 @@
 </script>
 
 <div class="col-sm-10">
-  <h2>AI 가계부</h2>
-  <p class="text-muted">음성이나 텍스트로 지출/수입 내역을 말하면 AI가 캘린더에 등록합니다.</p>
+  <h2>AI 가계부 및 자동 환전</h2>
+  <p class="text-muted">음성이나 텍스트로 지출/수입 내역을 말하면 AI가 캘린더에 등록합니다. 현지 화폐 단위를 원으로 자동으로 환산해줍니다.</p>
   <audio id="audioPlayer" controls style="display:none;"></audio>
 
   <!-- 통계 카드 -->
@@ -512,7 +631,7 @@
   <!-- 입력 영역 -->
   <div class="row mb-3">
     <div class="col-sm-8">
-      <textarea id="question" class="form-control" placeholder="예: 오늘 택시비 15000원 지출" rows="2"></textarea>
+      <textarea id="question" class="form-control" placeholder="예: 오늘 택시비 10.99달러 지출" rows="2"></textarea>
     </div>
     <div class="col-sm-2">
       <button type="button" class="btn btn-primary btn-block" id="send" style="height: 100%;">
@@ -559,6 +678,23 @@
 
   <!-- 캘린더 -->
   <div id="calendar" class="p-3 my-3 border rounded"></div>
+
+  <!-- 환율 정보 카드 -->
+  <div class="card mb-3">
+    <div class="card-header bg-info text-white">
+      <h6 class="mb-0">오늘의 환율 정보</h6>
+    </div>
+    <div class="card-body">
+      <div class="row" id="exchangeRates">
+        <div class="col-sm-12 text-center text-muted">
+          환율 정보를 불러오는 중...
+        </div>
+      </div>
+      <div class="mt-2 text-right">
+        <small class="text-muted" id="rateUpdateTime"></small>
+      </div>
+    </div>
+  </div>
 
 </div>
 

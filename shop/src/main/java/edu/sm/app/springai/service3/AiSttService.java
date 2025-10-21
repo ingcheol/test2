@@ -55,29 +55,43 @@ public class AiSttService {
   public List<AccountBook> extractAccountBookData(String question) {
     String today = LocalDate.now().toString();
     String systemPrompt = """
-    You are an AI that extracts information into a JSON format for a household account book.
-    IMPORTANT: The user may provide MULTIPLE transactions in one sentence.
-    
-    You MUST return a JSON ARRAY of transactions, even if there's only one.
-    Each transaction object MUST contain: date (YYYY-MM-DD), category, amount (number), type ("expense" or "income"), memo.
-    
-    IMPORTANT RULES:
-    1. The date format MUST be strictly "YYYY-MM-DD". For example, October 20th 2025 is "2025-10-20".
-    2. The 'type' MUST be either "expense" or "income".
-    3. The 'category' MUST be chosen ONLY from the following Korean list, based on the context:
-       - 식비 (Includes dining out, cafes, groceries)
-       - 고정비 (Includes rent, utilities, insurance, phone bills)
-       - 교통/차량비 (Includes bus, subway, taxi, fuel, car maintenance)
-       - 생활/쇼핑 (Includes daily necessities, clothing, appliances, cosmetics)
-       - 여가/문화/교육 (Includes movies, travel, books, classes, gatherings)
-       - 기타 지출 (Includes events like weddings/funerals, exceptional expenses, one-off items)
-    4. If the type is "income", set the category to "수입".
-    5. Your response MUST be ONLY a raw JSON ARRAY, starting with '[' and ending with ']'.
-    6. DO NOT add any other text, explanations, or markdown formatting like ```
-    
-    Example input: "어제 스타벅스 9천원 썼고 오늘 롯데리아 7천원 썼어"
-    Example output: [{"date":"2025-10-20","category":"식비","amount":9000,"type":"expense","memo":"스타벅스"},{"date":"2025-10-21","category":"식비","amount":7000,"type":"expense","memo":"롯데리아"}]
-    """;
+        You are an AI that extracts household account book transactions.
+        CRITICAL: Your response MUST be ONLY a valid JSON array.
+        
+        IMPORTANT: If the user mentions foreign currency (USD, JPY, EUR, CNY, VND, THB, PHP, TWD, HKD, AUD), 
+        extract both the original amount AND currency code. If no currency is mentioned, use "KRW".
+        
+        Rules:
+        1. Return JSON array format: [{"date":"YYYY-MM-DD","category":"카테고리","amount":숫자,"currency":"통화코드","type":"expense or income","memo":"설명"}]
+        2. If currency is mentioned, include "currency" field (USD, JPY, EUR, CNY, VND, THB, PHP, TWD, HKD, AUD, KRW)
+        3. If no currency mentioned, use "KRW" as default
+        4. Categories: 식비, 고정비, 교통/차량비, 생활/쇼핑, 여가/문화/교육, 기타 지출, 수입
+        5. Detect currency keywords:
+           - 달러, dollar, $ → USD
+           - 엔, yen, ¥ (일본) → JPY
+           - 유로, euro, € → EUR
+           - 위안, yuan, ¥ (중국) → CNY
+           - 동, dong, ₫ → VND
+           - 바트, baht, ฿ → THB
+           - 페소, peso, ₱ → PHP
+           - 대만달러, taiwan dollar, NT$ → TWD
+           - 홍콩달러, hong kong dollar, HK$ → HKD
+           - 호주달러, australian dollar, A$ → AUD
+        6. NO markdown, NO explanations, ONLY raw JSON array
+        
+        Examples:
+        Input: "오늘 스타벅스 5천원"
+        Output: [{"date":"2025-10-21","category":"식비","amount":5000,"currency":"KRW","type":"expense","memo":"스타벅스"}]
+        
+        Input: "어제 도쿄 라멘 1000엔"
+        Output: [{"date":"2025-10-20","category":"식비","amount":1000,"currency":"JPY","type":"expense","memo":"도쿄 라멘"}]
+        
+        Input: "뉴욕 호텔 150달러"
+        Output: [{"date":"2025-10-21","category":"여가/문화/교육","amount":150,"currency":"USD","type":"expense","memo":"뉴욕 호텔"}]
+        
+        Input: "베트남 쌀국수 50000동"
+        Output: [{"date":"2025-10-21","category":"식비","amount":50000,"currency":"VND","type":"expense","memo":"베트남 쌀국수"}]
+        """;
 
     String userPrompt = """
     Today's date is {today}. Use this to calculate dates like "yesterday", "tomorrow".
