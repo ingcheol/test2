@@ -181,7 +181,8 @@ ex) https//127.0.0.1:8443/
 ![가계부](admin/src/main/resources/static/img/ai42.png)
 ![가계부](admin/src/main/resources/static/img/ai43.png)
 ### 위치 인식
-![위치 인식](admin/src/main/resources/static/img/ai1.png)
+![위치 인식](admin/src/main/resources/static/img/ai51.png)
+![위치 인식](admin/src/main/resources/static/img/ai52.png)
 
 ---
 ### 유튜브 시연 영상
