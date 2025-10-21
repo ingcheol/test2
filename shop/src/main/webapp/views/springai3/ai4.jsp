@@ -11,10 +11,10 @@
 <style>
     /* 채팅 로그 스타일 */
     #chat-log {
-        height: 300px; /* 채팅 로그 높이 */
+        height: 300px;
         overflow-y: auto;
         display: flex;
-        flex-direction: column-reverse; /* 새 채팅이 항상 상단에 오도록 */
+        flex-direction: column-reverse;
         border: 1px solid #ddd;
         border-radius: 5px;
         padding: 10px;
@@ -25,49 +25,222 @@
     #calendar {
         height: 700px;
     }
+    /* 필터/검색 패널 스타일 */
+    .filter-panel {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border: 1px solid #dee2e6;
+    }
+    .filter-panel label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: block;
+    }
+    /* 통계 카드 */
+    .stats-card {
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        text-align: center;
+        color: white;
+    }
+    .stats-card h4 {
+        margin: 0;
+        font-size: 24px;
+    }
+    .stats-card p {
+        margin: 5px 0 0 0;
+        font-size: 12px;
+    }
+    /* all-day 텍스트 숨기기 */
+    .fc-list-item-time {
+        display: none !important;
+    }
 </style>
 
 <script>
     let ai4 = {
-        calendar: null, // FullCalendar 인스턴스를 저장할 변수
+        calendar: null,
+        allEvents: [],
+        categories: ['식비', '고정비', '교통/차량비', '생활/쇼핑', '여가/문화/교육', '기타 지출', '수입'],
+        currentEditEvent: null, // 현재 수정 중인 이벤트
 
         init: function () {
-            this.initCalendar(); // 캘린더 초기화
-            this.startQuestion(); // 음성 입력 대기 시작
+            this.initCalendar();
+            this.initFilters();
+            this.initModal();
+            this.startQuestion();
+            this.loadExchangeRates();
 
             $('#send').click(() => {
                 this.send();
             });
+            $('#question').keypress((e) => {
+                if (e.which === 13 && !e.shiftKey) {
+                    e.preventDefault();
+                    $('#send').click();
+                }
+            });
+
             $('#spinner').css('visibility', 'hidden');
         },
 
-        // FullCalendar 초기화 함수
+        // 모달 초기화
+        initModal: function() {
+            // 저장 버튼
+            $('#saveEdit').click(() => {
+                this.saveEventEdit();
+            });
+
+            // 삭제 버튼
+            $('#deleteEvent').click(() => {
+                this.deleteEvent();
+            });
+        },
+
+        // FullCalendar 초기화
         initCalendar: function() {
             let calendarEl = document.getElementById('calendar');
             this.calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth', // 월간 뷰
+                initialView: 'dayGridMonth',
+                locale: 'ko',
+                displayEventTime: false,
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
                 },
-                editable: true, // 이벤트 드래그 수정
-                events: [
-                    // 테스트용 예시 이벤트
-                    {
-                        title: '[식비] 12,000원',
-                        start: new Date(),
-                        allDay: true,
-                        color: '#e57373'
-                    }
-                ],
-                // 날짜 클릭 시
-                dateClick: function(info) {
+                editable: true,
+                events: [],
+                dateClick: (info) => {
                     $('#question').val(info.dateStr + ' ');
                     $('#question').focus();
+                },
+                eventClick: (info) => {
+                    this.openEditModal(info.event);
                 }
             });
             this.calendar.render();
+        },
+
+        // 수정 모달 열기
+        openEditModal: function(event) {
+            this.currentEditEvent = event;
+
+            // 모달에 데이터 채우기
+            $('#editDate').val(event.startStr);
+            $('#editCategory').val(event.extendedProps.category);
+            $('#editAmount').val(event.extendedProps.amount);
+            $('#editMemo').val(event.extendedProps.memo);
+            $('#editType').val(event.extendedProps.type);
+
+            // 모달 열기
+            $('#editModal').modal('show');
+        },
+
+        // 이벤트 수정 저장
+        saveEventEdit: function() {
+            if (!this.currentEditEvent) return;
+
+            let newDate = $('#editDate').val();
+            let newCategory = $('#editCategory').val();
+            let newAmount = parseFloat($('#editAmount').val());
+            let newMemo = $('#editMemo').val();
+            let newType = $('#editType').val();
+
+            if (!newDate || !newAmount || !newMemo) {
+                alert('모든 필드를 입력해주세요.');
+                return;
+            }
+
+            // 이벤트 업데이트
+            this.currentEditEvent.setProp('title', '[' + newCategory + '] ' + newAmount.toLocaleString() + '원 ' + newMemo);
+            this.currentEditEvent.setStart(newDate);
+            this.currentEditEvent.setEnd(null);
+            this.currentEditEvent.setExtendedProp('category', newCategory);
+            this.currentEditEvent.setExtendedProp('amount', newAmount);
+            this.currentEditEvent.setExtendedProp('memo', newMemo);
+            this.currentEditEvent.setExtendedProp('type', newType);
+
+            // 색상 변경
+            let isExpense = newType === 'expense';
+            this.currentEditEvent.setProp('color', isExpense ? '#e57373' : '#81c784');
+
+            // allEvents 배열도 업데이트
+            let eventIndex = this.allEvents.findIndex(e => e.id === this.currentEditEvent.id);
+            if (eventIndex !== -1) {
+                this.allEvents[eventIndex].title = '[' + newCategory + '] ' + newAmount.toLocaleString() + '원 ' + newMemo;
+                this.allEvents[eventIndex].start = newDate;
+                this.allEvents[eventIndex].allDay = true;
+                delete this.allEvents[eventIndex].end;
+                this.allEvents[eventIndex].extendedProps.category = newCategory;
+                this.allEvents[eventIndex].extendedProps.amount = newAmount;
+                this.allEvents[eventIndex].extendedProps.memo = newMemo;
+                this.allEvents[eventIndex].extendedProps.type = newType;
+                this.allEvents[eventIndex].color = isExpense ? '#e57373' : '#81c784';
+            }
+
+            this.updateStats();
+            $('#editModal').modal('hide');
+            this.currentEditEvent = null;
+        },
+
+        // 이벤트 삭제
+        deleteEvent: function() {
+            if (!this.currentEditEvent) return;
+
+            if (confirm('정말 삭제하시겠습니까?')) {
+                this.currentEditEvent.remove();
+                this.removeFromAllEvents(this.currentEditEvent.id);
+                this.updateStats();
+                $('#editModal').modal('hide');
+                this.currentEditEvent = null;
+            }
+        },
+
+        // 필터 및 검색 초기화
+        initFilters: function() {
+            $('#categoryFilter').on('change', () => {
+                this.applyFilters();
+            });
+
+            $('#searchInput').on('input', () => {
+                this.applyFilters();
+            });
+
+            $('#searchBtn').click(() => {
+                this.applyFilters();
+            });
+
+            $('#resetBtn').click(() => {
+                $('#categoryFilter').val('all');
+                $('#searchInput').val('');
+                this.applyFilters();
+            });
+        },
+
+        applyFilters: function() {
+            let category = $('#categoryFilter').val();
+            let searchTerm = $('#searchInput').val().toLowerCase().trim();
+
+            this.calendar.removeAllEvents();
+
+            let filteredEvents = this.allEvents.filter(event => {
+                let matchCategory = category === 'all' || event.extendedProps.category === category;
+                let matchSearch = !searchTerm ||
+                    event.title.toLowerCase().includes(searchTerm) ||
+                    (event.extendedProps.memo && event.extendedProps.memo.toLowerCase().includes(searchTerm));
+
+                return matchCategory && matchSearch;
+            });
+
+            filteredEvents.forEach(event => {
+                this.calendar.addEvent(event);
+            });
+
+            this.updateStats();
         },
 
         startQuestion: function () {
@@ -75,8 +248,7 @@
             let qForm = `
             <div class="media border p-3 my-2" id="voice-prompt">
                <div class="speakerPulse"
-                  style="width: 30px; height: 30px;
-                  background: url('/image/speaker-yellow.png') no-repeat center center / contain;"></div>
+                  style="width: 30px; height: 30px; no-repeat center center / contain;"></div>
               <div class="media-body">
                 <p class="text-muted" style="margin-left: 10px; padding-top: 5px;">
                   음성으로 가계부 내역을 말씀하세요... (예: 어제 스타벅스 7천원 지출)
@@ -87,7 +259,6 @@
             $('#chat-log').prepend(qForm);
         },
 
-        // 2. 음성 녹음 완료 시 (STT)
         handleVoice: async function (mp3Blob) {
             $('#spinner').css('visibility', 'visible');
             $('#voice-prompt').remove();
@@ -104,10 +275,7 @@
             const questionText = await response.text();
             console.log('STT Result:' + questionText);
 
-            // 사용자 질문을 채팅 패널에 보여주기
             this.showUserChat(questionText);
-
-            // AI에게 텍스트 전달
             await this.processInput(questionText);
         },
 
@@ -123,19 +291,18 @@
             await this.processInput(question);
         },
 
-        // 4. AI에게 가계부 내역 추출 요청
         processInput: async function (questionText) {
             $('#spinner').css('visibility', 'visible');
             $('#question').val('');
 
-            let confirmationMsg = ''; // AI가 응답할 최종 메시지
+            let confirmationMsg = '';
 
             try {
                 const response = await fetch('/ai3/accountbook', {
                     method: 'post',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json' // [중요] JSON을 반환받음
+                        'Accept': 'application/json'
                     },
                     body: new URLSearchParams({ question: questionText })
                 });
@@ -144,18 +311,51 @@
                     throw new Error('AI 서버 응답 오류');
                 }
 
-                // AI가 추출한 JSON 데이터
-                // 예: { "date": "2025-10-20", "category": "식비", "amount": 8000, "type": "expense", "memo": "점심값" }
                 const data = await response.json();
 
-                if (!data || !data.date || !data.amount) {
+                let transactions = Array.isArray(data) ? data : [data];
+
+                let validTransactions = transactions.filter(function(item) {
+                    return item && item.date && item.amount;
+                });
+
+                if (validTransactions.length === 0) {
                     throw new Error('AI가 날짜와 금액을 추출하지 못했습니다.');
                 }
 
-                this.addEventToCalendar(data);
+                // 환율 변환 처리
+                let summaries = [];
+                for (let i = 0; i < validTransactions.length; i++) {
+                    let transaction = validTransactions[i];
 
-                const typeStr = data.type === 'expense' ? '지출' : '수입';
-                confirmationMsg = data.date + "에 " + data.category + " 항목으로 " + data.amount + "원 " + typeStr + " 내역을 등록했습니다.";
+                    // 외화인 경우 원화로 변환
+                    if (transaction.currency && transaction.currency !== 'KRW') {
+                        let originalAmount = transaction.amount;
+                        let originalCurrency = transaction.currency;
+
+                        // 원화로 변환
+                        let krwAmount = this.convertToKRW(originalAmount, originalCurrency);
+
+                        // 메모에 원래 금액 추가
+                        transaction.memo = transaction.memo + ' (' + this.formatCurrency(originalAmount, originalCurrency) + ')';
+                        transaction.amount = krwAmount;
+                        transaction.currency = 'KRW';
+
+                        console.log('환율 변환: ' + originalAmount + ' ' + originalCurrency + ' → ' + krwAmount + ' KRW');
+                    }
+
+                    this.addEventToCalendar(transaction);
+                    let typeStr = transaction.type === 'expense' ? '지출' : '수입';
+                    summaries.push(transaction.category + ' ' + transaction.amount.toLocaleString() + '원 ' + typeStr);
+                }
+
+                if (validTransactions.length === 1) {
+                    let t = validTransactions[0];
+                    let typeStr = t.type === 'expense' ? '지출' : '수입';
+                    confirmationMsg = t.date + '에 ' + t.category + ' 항목으로 ' + t.amount.toLocaleString() + '원 ' + typeStr + ' 내역을 등록했습니다.';
+                } else {
+                    confirmationMsg = '총 ' + validTransactions.length + '건의 내역을 등록했습니다. ' + summaries.join(', ');
+                }
 
             } catch (error) {
                 console.error('Error processing input:', error);
@@ -165,24 +365,74 @@
             }
         },
 
-        // 5. FullCalendar에 이벤트 추가
-        addEventToCalendar: function(data) {
-            const isExpense = data.type === 'expense';
-            let newEvent = {
-                title: '[' + data.category + '] ' + data.memo + data.amount + '원',
-                start: data.date, // AI가 추출한 날짜
-                allDay: true,
-                color: isExpense ? '#e57373' : '#81c784',
-                extendedProps: { // 추가 데이터
-                    amount: data.amount,
-                    memo: data.memo || data.category
-                }
-            };
-            this.calendar.addEvent(newEvent);
-            this.calendar.gotoDate(data.date); // 해당 날짜로 캘린더 이동
+// 통화 포맷팅 함수 추가
+        formatCurrency: function(amount, currency) {
+            switch (currency) {
+                case 'USD': return '$' + amount;
+                case 'JPY': return '¥' + Math.round(amount);
+                case 'EUR': return '€' + amount;
+                case 'CNY': return '¥' + amount;
+                case 'VND': return Math.round(amount) + '₫';
+                case 'THB': return '฿' + amount;
+                case 'PHP': return '₱' + amount;
+                case 'TWD': return 'NT$' + amount;
+                case 'HKD': return 'HK$' + amount;
+                case 'AUD': return 'A$' + amount;
+                default: return amount + ' ' + currency;
+            }
         },
 
-        // 7. AI가 음성(TTS)으로 응답
+        addEventToCalendar: function(data) {
+            const isExpense = data.type === 'expense';
+            const eventId = 'event-' + Date.now() + '-' + Math.random();
+
+            let newEvent = {
+                id: eventId,
+                title: '[' + data.category + '] ' + data.amount.toLocaleString() + '원 ' + data.memo,
+                start: data.date,
+                allDay: true,
+                color: isExpense ? '#e57373' : '#81c784',
+                extendedProps: {
+                    amount: data.amount,
+                    memo: data.memo || data.category,
+                    type: data.type,
+                    category: data.category
+                }
+            };
+
+            this.allEvents.push(newEvent);
+
+            let currentCategory = $('#categoryFilter').val();
+            if (currentCategory === 'all' || currentCategory === data.category) {
+                this.calendar.addEvent(newEvent);
+            }
+
+            this.calendar.gotoDate(data.date);
+            this.updateStats();
+        },
+
+        removeFromAllEvents: function(eventId) {
+            this.allEvents = this.allEvents.filter(e => e.id !== eventId);
+        },
+
+        updateStats: function() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            let currentEvents = this.calendar.getEvents();
+
+            currentEvents.forEach(event => {
+                let amount = event.extendedProps.amount;
+                if (event.extendedProps.type === 'expense') {
+                    totalExpense += amount;
+                } else {
+                    totalIncome += amount;
+                }
+            });
+
+            $('#totalIncome').text(totalIncome.toLocaleString() + '원');
+            $('#totalExpense').text(totalExpense.toLocaleString() + '원');
+        },
+
         speak: async function(text) {
             this.showAiChat(text);
 
@@ -197,7 +447,7 @@
 
                 if (!ttsResponse.ok) {
                     const errorText = await ttsResponse.text();
-                    throw new Error(`TTS 서버 응답 오류 (${ttsResponse.status}): ${errorText}`);
+                    throw new Error('TTS 서버 응답 오류');
                 }
 
                 const audioBlob = await ttsResponse.blob();
@@ -244,7 +494,7 @@
                 this.startQuestion();
             }
         },
-        // --- UI 헬퍼 함수 ---
+
         showUserChat: function(text) {
             let qForm =
                 '<div class="media border p-3 my-2 bg-light">' +
@@ -255,6 +505,7 @@
                 '</div>';
             $('#chat-log').prepend(qForm);
         },
+
         showAiChat: function(text) {
             let aForm =
                 '<div class="media border p-3 my-2 bg-light">' +
@@ -262,10 +513,92 @@
                 '<h6>AI Assistant</h6>' +
                 '<p>' + text + '</p>' +
                 '</div>' +
-                '<img src="/image/assistant.png" alt="AI" class="ml-3 mt-3 rounded-circle" style="width:60px;">' +
                 '</div>';
             $('#chat-log').prepend(aForm);
+        },
+
+        // 환율 정보 로드
+        loadExchangeRates: async function() {
+            try {
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/KRW');
+                const data = await response.json();
+
+                // 원화 기준으로 10가지 주요 통화 환율 계산
+                this.exchangeRates = {
+                    USD: (1 / data.rates.USD).toFixed(2),      // 미국 달러
+                    JPY: (100 / data.rates.JPY).toFixed(2),    // 일본 엔 (100엔 기준)
+                    EUR: (1 / data.rates.EUR).toFixed(2),      // 유로
+                    CNY: (1 / data.rates.CNY).toFixed(2),      // 중국 위안
+                    VND: (1000 / data.rates.VND).toFixed(2),   // 베트남 동 (1000동 기준)
+                    THB: (1 / data.rates.THB).toFixed(2),      // 태국 바트
+                    PHP: (1 / data.rates.PHP).toFixed(2),      // 필리핀 페소
+                    TWD: (1 / data.rates.TWD).toFixed(2),      // 대만 달러
+                    HKD: (1 / data.rates.HKD).toFixed(2),      // 홍콩 달러
+                    AUD: (1 / data.rates.AUD).toFixed(2)       // 호주 달러
+                };
+
+                this.displayExchangeRates();
+
+            } catch (error) {
+                console.error('환율 정보 로드 실패:', error);
+                $('#exchangeRates').html('<div class="col-sm-12 text-danger text-center">환율 정보를 불러올 수 없습니다.</div>');
+            }
+        },
+
+// 환율 정보 화면에 표시
+        displayExchangeRates: function() {
+            let html = '';
+            let currencies = [
+                { code: 'USD', symbol: '$', name: '미국 달러', unit: 1 },
+                { code: 'JPY', symbol: '¥', name: '일본 엔', unit: 100 },
+                { code: 'EUR', symbol: '€', name: '유로', unit: 1 },
+                { code: 'CNY', symbol: '¥', name: '중국 위안', unit: 1 },
+                { code: 'VND', symbol: '₫', name: '베트남 동', unit: 1000 },
+                { code: 'THB', symbol: '฿', name: '태국 바트', unit: 1 },
+                { code: 'PHP', symbol: '₱', name: '필리핀 페소', unit: 1 },
+                { code: 'TWD', symbol: 'NT$', name: '대만 달러', unit: 1 },
+                { code: 'HKD', symbol: 'HK$', name: '홍콩 달러', unit: 1 },
+                { code: 'AUD', symbol: 'A$', name: '호주 달러', unit: 1 }
+            ];
+
+            currencies.forEach(currency => {
+                let rate = this.exchangeRates[currency.code];
+                let unitText = currency.unit > 1 ? currency.unit + ' ' : '';
+                html += '<div class="col-sm-6 col-md-4 col-lg-3 mb-2">' +
+                    '<div class="border rounded p-2 text-center" style="height: 100%;">' +
+                    '<strong>' + currency.symbol + ' ' + unitText + '=</strong><br>' +
+                    '<span class="text-primary" style="font-size: 1.1em;">' + parseFloat(rate).toLocaleString() + '원</span>' +
+                    '<br><small class="text-muted">' + currency.name + '</small>' +
+                    '</div>' +
+                    '</div>';
+            });
+
+            $('#exchangeRates').html(html);
+
+            let now = new Date();
+            $('#rateUpdateTime').text('업데이트: ' + now.toLocaleString('ko-KR'));
+        },
+
+        // 외화를 원화로 변환
+        convertToKRW: function(amount, currency) {
+            currency = currency.toUpperCase();
+
+            if (this.exchangeRates[currency]) {
+                let rate = parseFloat(this.exchangeRates[currency]);
+
+                // JPY는 100엔 기준, VND는 1000동 기준
+                if (currency === 'JPY') {
+                    return Math.round(amount * rate / 100);
+                } else if (currency === 'VND') {
+                    return Math.round(amount * rate / 1000);
+                }
+
+                return Math.round(amount * rate);
+            }
+
+            return amount;
         }
+
     };
 
     $(() => {
@@ -275,29 +608,143 @@
 </script>
 
 <div class="col-sm-10">
-  <h2>가계부 AI</h2>
-  <p class="text-muted">음성이나 텍스트로 지출/수입 내역을 말하면 AI가 캘린더에 등록합니다.</p>
+  <h2>AI 가계부 및 자동 환전</h2>
+  <p class="text-muted">음성이나 텍스트로 지출/수입 내역을 말하면 AI가 캘린더에 등록합니다. 현지 화폐 단위를 원으로 자동으로 환산해줍니다.</p>
   <audio id="audioPlayer" controls style="display:none;"></audio>
 
+  <!-- 통계 카드 -->
+  <div class="row mb-3">
+    <div class="col-sm-5">
+      <div class="stats-card" style="background: green">
+        <h4 id="totalIncome">0원</h4>
+        <p>총 수입</p>
+      </div>
+    </div>
+    <div class="col-sm-5">
+      <div class="stats-card" style="background: red">
+        <h4 id="totalExpense">0원</h4>
+        <p>총 지출</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 입력 영역 -->
   <div class="row mb-3">
     <div class="col-sm-8">
-      <textarea id="question" class="form-control" placeholder="예: 오늘 택시비 15000원 지출"></textarea>
+      <textarea id="question" class="form-control" placeholder="예: 오늘 택시비 10.99달러 지출" rows="2"></textarea>
     </div>
     <div class="col-sm-2">
-      <button type="button" class="btn btn-primary btn-block" id="send">전송</button>
+      <button type="button" class="btn btn-primary btn-block" id="send" style="height: 100%;">
+        전송
+      </button>
     </div>
     <div class="col-sm-2">
-      <button class="btn btn-primary btn-block" disabled>
+      <button class="btn btn-secondary btn-block" disabled style="height: 100%;">
         <span class="spinner-border spinner-border-sm" id="spinner"></span>
-        Processing..
+        처리중..
       </button>
     </div>
   </div>
 
-  <div id="chat-log">
+  <!-- 채팅 로그 -->
+  <div id="chat-log"></div>
+
+  <!-- 필터 및 검색 패널 -->
+  <div class="filter-panel">
+    <div class="row">
+      <div class="col-sm-4">
+        <label for="categoryFilter">카테고리 필터</label>
+        <select id="categoryFilter" class="form-control">
+          <option value="all">전체 보기</option>
+          <option value="식비">식비</option>
+          <option value="고정비">고정비</option>
+          <option value="교통/차량비">교통/차량비</option>
+          <option value="생활/쇼핑">생활/쇼핑</option>
+          <option value="여가/문화/교육">여가/문화/교육</option>
+          <option value="기타 지출">기타 지출</option>
+          <option value="수입">수입</option>
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <label for="searchInput">내역 검색</label>
+        <input type="text" id="searchInput" class="form-control" placeholder="검색어를 입력하세요 (예: 스타벅스, 택시)">
+      </div>
+      <div class="col-sm-2">
+        <button type="button" class="btn btn-info btn-block" id="searchBtn">검색</button>
+        <button type="button" class="btn btn-secondary btn-block mt-1" id="resetBtn">초기화</button>
+      </div>
+    </div>
   </div>
 
-  <div id="calendar" class="p-3 my-3 border rounded">
+  <!-- 캘린더 -->
+  <div id="calendar" class="p-3 my-3 border rounded"></div>
+
+  <!-- 환율 정보 카드 -->
+  <div class="card mb-3">
+    <div class="card-header bg-info text-white">
+      <h6 class="mb-0">오늘의 환율 정보</h6>
+    </div>
+    <div class="card-body">
+      <div class="row" id="exchangeRates">
+        <div class="col-sm-12 text-center text-muted">
+          환율 정보를 불러오는 중...
+        </div>
+      </div>
+      <div class="mt-2 text-right">
+        <small class="text-muted" id="rateUpdateTime"></small>
+      </div>
+    </div>
   </div>
 
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">가계부 내역 수정</h5>
+        <button type="button" class="close" data-dismiss="modal">
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="editDate">날짜</label>
+          <input type="date" class="form-control" id="editDate">
+        </div>
+        <div class="form-group">
+          <label for="editCategory">카테고리</label>
+          <select class="form-control" id="editCategory">
+            <option value="식비">식비</option>
+            <option value="고정비">고정비</option>
+            <option value="교통/차량비">교통/차량비</option>
+            <option value="생활/쇼핑">생활/쇼핑</option>
+            <option value="여가/문화/교육">여가/문화/교육</option>
+            <option value="기타 지출">기타 지출</option>
+            <option value="수입">수입</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editAmount">금액</label>
+          <input type="number" class="form-control" id="editAmount">
+        </div>
+        <div class="form-group">
+          <label for="editMemo">메모</label>
+          <input type="text" class="form-control" id="editMemo">
+        </div>
+        <div class="form-group">
+          <label for="editType">유형</label>
+          <select class="form-control" id="editType">
+            <option value="expense">지출</option>
+            <option value="income">수입</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="deleteEvent">삭제</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+        <button type="button" class="btn btn-primary" id="saveEdit">저장</button>
+      </div>
+    </div>
+  </div>
 </div>
