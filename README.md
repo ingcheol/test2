@@ -136,6 +136,7 @@ shop/src/main/webapp/views/
 ### 여행 일정
 - `/ai1/few-shot-prompt` - 여행 일정 생성
 
+
 ### 작품 해설
 - `/ai3/image-analysis2` - 이미지 분석 및 해설
 
@@ -152,13 +153,14 @@ shop/src/main/webapp/views/
 - `/ai3/tts` - 텍스트를 음성으로 변환
 
 ### 위치 인식
-- `/ai3/image-analysis2` - 장소 식별 및 분석
+- `/ai3/image-analysis` - 이미지 분석 (스트리밍 방식)
+- `/ai3/image-analysis2` - 장소 식별 및 분석 (음성 포함)
 
 ---
 
 ###  브라우저 접속
 ```
-ex) https//127.0.0.1:8443/
+- `https//127.0.0.1:8443` - 메인 페이지
 ```
 
 ---
@@ -182,7 +184,8 @@ ex) https//127.0.0.1:8443/
 ![가계부](admin/src/main/resources/static/img/ai42.png)
 ![가계부](admin/src/main/resources/static/img/ai43.png)
 ### 위치 인식
-![위치 인식](admin/src/main/resources/static/img/ai1.png)
+![위치 인식](admin/src/main/resources/static/img/ai5.png)
+![위치 인식](admin/src/main/resources/static/img/ai52.png)
 
 ---
 ### 유튜브 시연 영상
