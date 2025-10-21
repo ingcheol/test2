@@ -11,8 +11,8 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 public class Chat {
     private int chatId;
-    private String senderId;    // 보낸 사람
-    private String receiverId;  // 받는 사람
+    private String senderId;
+    private String receiverId;
     private String message;
     private Timestamp regdate;
 }

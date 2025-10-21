@@ -277,7 +277,7 @@
                 '                <img src="/img/' + position.img + '" width="200" height="130" style="border-radius:4px;">' +
                 '            </div>' +
                 '            <div style="text-align:center;">' +
-                '                <button onclick="map1.findRoute(' + position.lat + ',' + position.lng + ',\'' + position.title + '\')" style="padding:6px 16px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">🚗 길찾기</button>' +
+                '                <button onclick="map1.findRoute(' + position.lat + ',' + position.lng + ',\'' + position.title + '\')" style="padding:6px 16px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">길찾기</button>' +
                 '            </div>' +
                 '        </div>' +
                 '    </div>' +
@@ -298,46 +298,46 @@
           customOverlay.setMap(this.map);
           this.activeOverlay = customOverlay;
 
-            // 로그 기록 - 지역 정보와 장소명 전송
-            this.logMarkerClick(position.title, position.lat, position.lng);
+          // 로그 기록 - 지역 정보와 장소명 전송
+          this.logMarkerClick(position.title, position.lat, position.lng);
         });
 
-          if (!this.touristOverlays) this.touristOverlays = [];
+        if (!this.touristOverlays) this.touristOverlays = [];
         this.touristOverlays.push(customOverlay);
       });
     },
 
-      // 마커 클릭 로그 기록 함수 추가
-      logMarkerClick: function(placeName, lat, lng) {
-          // 좌표로 지역 정보 가져오기
-          const geocoder = new kakao.maps.services.Geocoder();
-          const position = new kakao.maps.LatLng(lat, lng);
+    // 마커 클릭 로그 기록 함수 추가
+    logMarkerClick: function(placeName, lat, lng) {
+      // 좌표로 지역 정보 가져오기
+      const geocoder = new kakao.maps.services.Geocoder();
+      const position = new kakao.maps.LatLng(lat, lng);
 
-          geocoder.coord2RegionCode(lng, lat, (result, status) => {
-              let region = '알 수 없는 지역';
+      geocoder.coord2RegionCode(lng, lat, (result, status) => {
+        let region = '알 수 없는 지역';
 
-              if (status === kakao.maps.services.Status.OK && result.length > 0) {
-                  // 시/군/구 단위까지만 추출
-                  region = result[0].address_name || result[0].region_1depth_name + ' ' + result[0].region_2depth_name;
-              }
+        if (status === kakao.maps.services.Status.OK && result.length > 0) {
+          // 시/군/구 단위까지만 추출
+          region = result[0].address_name || result[0].region_1depth_name + ' ' + result[0].region_2depth_name;
+        }
 
-              // 서버에 로그 전송
-              $.ajax({
-                  url: '/maplog/click',
-                  type: 'POST',
-                  data: {
-                      name: placeName,
-                      region: region
-                  },
-                  success: function(response) {
-                      console.log('로그 기록 완료:', placeName, region);
-                  },
-                  error: function(error) {
-                      console.error('마커 클릭 로그 기록 실패:', error);
-                  }
-              });
-          });
-      },
+        // 서버에 로그 전송
+        $.ajax({
+          url: '/maplog/click',
+          type: 'POST',
+          data: {
+            name: placeName,
+            region: region
+          },
+          success: function(response) {
+            console.log('로그 기록 완료:', placeName, region);
+          },
+          error: function(error) {
+            console.error('마커 클릭 로그 기록 실패:', error);
+          }
+        });
+      });
+    },
 
     toggleCurrentLocation: function() {
       if (this.currentLocationMarker.getMap()) {
