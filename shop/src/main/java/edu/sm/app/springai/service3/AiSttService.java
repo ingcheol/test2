@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -51,32 +52,38 @@ public class AiSttService {
     this.objectMapper = objectMapper;
   }
 
-  public AccountBook extractAccountBookData(String question) {
+  public List<AccountBook> extractAccountBookData(String question) {
     String today = LocalDate.now().toString();
-
     String systemPrompt = """
-            You are an AI that extracts information into a JSON format for a household account book.
-            The final JSON object MUST contain these fields: date (YYYY-MM-DD), category, amount (number), type ("expense" or "income"), memo.
-            
-            IMPORTANT RULES:
-            1. The date format MUST be strictly "YYYY-MM-DD". For example, October 20th 2025 is "2025-10-20".
-            2. The 'type' MUST be either "expense" or "income".
-            3. The 'category' MUST be chosen ONLY from the following Korean list, based on the context:
-               - 식비 (Includes dining out, cafes, groceries)
-               - 고정비 (Includes rent, utilities, insurance, phone bills)
-               - 교통/차량비 (Includes bus, subway, taxi, fuel, car maintenance)
-               - 생활/쇼핑 (Includes daily necessities, clothing, appliances, cosmetics)
-               - 여가/문화/교육 (Includes movies, travel, books, classes, gatherings)
-               - 기타 지출 (Includes events like weddings/funerals, exceptional expenses, one-off items)
-            4. If the type is "income", set the category to "수입".
-            5. Your response MUST be ONLY the raw JSON object itself, starting with '{' and ending with '}'.
-            6. DO NOT add any other text, explanations, or markdown formatting like ```json.
-            """;
+    You are an AI that extracts information into a JSON format for a household account book.
+    IMPORTANT: The user may provide MULTIPLE transactions in one sentence.
+    
+    You MUST return a JSON ARRAY of transactions, even if there's only one.
+    Each transaction object MUST contain: date (YYYY-MM-DD), category, amount (number), type ("expense" or "income"), memo.
+    
+    IMPORTANT RULES:
+    1. The date format MUST be strictly "YYYY-MM-DD". For example, October 20th 2025 is "2025-10-20".
+    2. The 'type' MUST be either "expense" or "income".
+    3. The 'category' MUST be chosen ONLY from the following Korean list, based on the context:
+       - 식비 (Includes dining out, cafes, groceries)
+       - 고정비 (Includes rent, utilities, insurance, phone bills)
+       - 교통/차량비 (Includes bus, subway, taxi, fuel, car maintenance)
+       - 생활/쇼핑 (Includes daily necessities, clothing, appliances, cosmetics)
+       - 여가/문화/교육 (Includes movies, travel, books, classes, gatherings)
+       - 기타 지출 (Includes events like weddings/funerals, exceptional expenses, one-off items)
+    4. If the type is "income", set the category to "수입".
+    5. Your response MUST be ONLY a raw JSON ARRAY, starting with '[' and ending with ']'.
+    6. DO NOT add any other text, explanations, or markdown formatting like ```
+    
+    Example input: "어제 스타벅스 9천원 썼고 오늘 롯데리아 7천원 썼어"
+    Example output: [{"date":"2025-10-20","category":"식비","amount":9000,"type":"expense","memo":"스타벅스"},{"date":"2025-10-21","category":"식비","amount":7000,"type":"expense","memo":"롯데리아"}]
+    """;
 
     String userPrompt = """
-            Today's date is {today}. Use this to calculate dates like "yesterday".
-            Analyze the user's request: "{question}"
-            """;
+    Today's date is {today}. Use this to calculate dates like "yesterday", "tomorrow".
+    Analyze the user's request: "{question}"
+    Extract ALL transactions and return as a JSON array.
+    """;
 
     String rawContent = chatClient.prompt()
         .system(systemPrompt)
@@ -87,21 +94,27 @@ public class AiSttService {
         .content();
 
     try {
-      int jsonStart = rawContent.indexOf('{');
-      int jsonEnd = rawContent.lastIndexOf('}');
+      // JSON 배열 추출
+      int jsonStart = rawContent.indexOf('[');
+      int jsonEnd = rawContent.lastIndexOf(']');
 
       if (jsonStart == -1 || jsonEnd == -1) {
-        throw new RuntimeException("AI 응답에 JSON 형식이 없습니다: " + rawContent);
+        throw new RuntimeException("AI 응답에 JSON 배열 형식이 없습니다: " + rawContent);
       }
-      String jsonString = rawContent.substring(jsonStart, jsonEnd + 1);
 
-      return objectMapper.readValue(jsonString, AccountBook.class);
+      String jsonString = rawContent.substring(jsonStart, jsonEnd + 1);
+      log.info("추출된 JSON: " + jsonString);
+
+      // JSON 배열을 List<AccountBook>으로 변환
+      return objectMapper.readValue(jsonString,
+          objectMapper.getTypeFactory().constructCollectionType(List.class, AccountBook.class));
 
     } catch (JsonProcessingException e) {
       log.error("JSON 파싱 실패: {}", e.getMessage());
       throw new RuntimeException("AI 응답을 파싱하는 데 실패했습니다.", e);
     }
   }
+
   public Map<String, String> translateVoice(MultipartFile audioFile, String targetLang) throws IOException {
     // 1. 음성을 텍스트로 변환 (언어 자동 감지)
     Path tempFile = Files.createTempFile("multipart-", audioFile.getOriginalFilename());
