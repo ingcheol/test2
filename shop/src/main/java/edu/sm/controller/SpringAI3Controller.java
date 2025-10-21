@@ -25,6 +25,7 @@ public class SpringAI3Controller {
     }
     @RequestMapping("/ai1")
     public String ai1(Model model) {
+        model.addAttribute("adminserver",adminServer);
         model.addAttribute("center", dir+"ai1");
         model.addAttribute("left", dir+"left");
         return "index";

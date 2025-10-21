@@ -103,6 +103,17 @@
                 const { data: receivedConnectData } = e;
                 console.log('connect event data: ',receivedConnectData);
             });
+            sse.addEventListener('aimsg', e => {
+                const { data: data } = e;
+                console.log("msg :",data);
+
+                const result = JSON.parse(data).result;
+                $('#aimsg').html(result.trim());
+
+                const base64Src = "data:image/png;base64," + JSON.parse(data).base64File;
+                const generatedImage = document.getElementById("generatedImage");
+                generatedImage.src = base64Src;
+            });
             sse.addEventListener('count', e => {
                 const { data: receivedCount } = e;
                 console.log("count :",receivedCount);
@@ -395,6 +406,7 @@
         center.init();
     });
 </script>
+
 <!-- Begin Page Content -->
 <div class="container-fluid">
 
@@ -403,6 +415,11 @@
         <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
         <a href="/chart" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
                 class="fas fa-chart-bar fa-sm text-white-50"></i> 상세 분석 보기</a>
+    </div>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h5 class="h5 mb-0 text-gray-800" id="aimsg"></h5>
+        <img id="generatedImage" src="/img/assistant.png"
+             width="100px;" class="img-fluid" alt="Generated Image" />
     </div>
 
     <!-- ========== 새로운 통계 카드 추가 ========== -->
@@ -525,8 +542,5 @@
             </div>
         </div>
     </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div class="chart-pie pt-4 pb-2">
-                        <canvas id="myPieChart"></canvas>
-                    </div>
+
+</div>

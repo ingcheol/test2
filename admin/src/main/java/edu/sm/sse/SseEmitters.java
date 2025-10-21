@@ -2,6 +2,7 @@ package edu.sm.sse;
 
 
 import edu.sm.app.dto.AdminMsg;
+import edu.sm.app.dto.AiMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -24,6 +25,30 @@ public class SseEmitters {
                 this.emitters.get(key).send(SseEmitter.event()
                         .name("adminmsg")
                         .data(adminMsg));
+            } catch ( IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+    public void msg(AiMsg aiMsg) {
+
+        this.emitters.values().forEach(emitter -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("aimsg")
+                        .data(aiMsg));
+            } catch ( IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+    public void msg(String msg) {
+
+        this.emitters.values().forEach(emitter -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("msg")
+                        .data(msg));
             } catch ( IOException e) {
                 throw new RuntimeException(e);
             }
