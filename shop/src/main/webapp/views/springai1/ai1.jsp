@@ -101,7 +101,17 @@
           day.places.forEach(p => {
             h += '<div class="place">';
             h += '<div class="time">' + (p.time || '시간 미정') + '</div>';
-            h += '<div class="name">' + (p.name || '장소명 없음') + '</div>';
+            if(p.url) {
+              h += '<div class="name">';
+              h += '<a href="' + p.url + '" target="_blank" ';
+              h += 'style="color:#d9534f; text-decoration:none; font-weight:bold; cursor:pointer;">';
+              h += (p.name || '장소명 없음');
+              h += ' <i class="bi bi-box-arrow-up-right" style="font-size:12px;"></i>';
+              h += '</a>';
+              h += '</div>';
+            } else {
+              h += '<div class="name">' + (p.name || '장소명 없음') + '</div>';
+            }
             if(p.description) h += '<div class="desc">' + p.description + '</div>';
             if(p.tip) h += '<div class="tip">TIP: ' + p.tip + '</div>';
             h += '</div>';
@@ -126,7 +136,7 @@
               title: p.name || '장소',
               start: date,
               backgroundColor: colors[pi % colors.length],
-              extendedProps: { time: p.time || '시간 미정', desc: p.description || '', tip: p.tip || '' }
+              extendedProps: { time: p.time || '시간 미정', desc: p.description || '', tip: p.tip || '', url: p.url || ''}
             });
           });
         }
@@ -140,6 +150,13 @@
           const e = i.event;
           alert(e.title + '\n\n시간: ' + e.extendedProps.time + '\n\n' + e.extendedProps.desc +
                   (e.extendedProps.tip ? '\n\nTIP: ' + e.extendedProps.tip : ''));
+          if(e.extendedProps.url) {
+            msg += '\n\n홈페이지: ' + e.extendedProps.url;
+            alert(msg);
+            window.open(e.extendedProps.url, '_blank');
+          } else {
+            alert(msg);
+          }
         });
       }
     }
