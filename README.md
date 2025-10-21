@@ -185,5 +185,5 @@ ex) https//127.0.0.1:8443/
 
 ---
 ### 유튜브 시연 영상
-[[2조 미니 프로젝트]](https://youtu.be/EnukCrgJsuM)
+[[2조 미니 프로젝트]](https://youtu.be/9i1OFRpKQAs)
 ---
