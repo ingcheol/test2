@@ -13,4 +13,5 @@ public class AccountBook {
   private double amount;
   private String type;
   private String memo;
+  private String currency;
 }
