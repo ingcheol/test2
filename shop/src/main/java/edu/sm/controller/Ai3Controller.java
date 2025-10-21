@@ -1,7 +1,6 @@
 package edu.sm.controller;
 
-
-
+import edu.sm.app.dto.AccountBook;
 import edu.sm.app.springai.service3.AiImageService;
 import edu.sm.app.springai.service3.AiSttService;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +67,11 @@ public class Ai3Controller {
   ) throws IOException {
     Map<String, String> result = aisttService.translateVoice(speech, targetLang);
     return result;
+  }
+
+  @RequestMapping(value = "/accountbook")
+  public AccountBook accountbook(@RequestParam("question") String question) {
+    return aisttService.extractAccountBookData(question);
   }
 
   @RequestMapping(value = "/chat-text")
