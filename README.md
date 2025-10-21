@@ -172,8 +172,7 @@ ex) https//127.0.0.1:8443/
 ![여행 일정](admin/src/main/resources/static/img/ai31.png)
 ![여행 일정](admin/src/main/resources/static/img/ai3ad.png)
 ### 실시간 통역
-![실시간 통역](admin/src/main/resources/static/img/ai1.png)
-
+![실시간 통역](admin/src/main/resources/static/img/ai2.png)
 ### 현지 음식 추천
 ![음식 추천](admin/src/main/resources/static/img/ai3.png)
 ![음식 추천](admin/src/main/resources/static/img/ai32.png)
