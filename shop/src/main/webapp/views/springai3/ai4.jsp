@@ -65,7 +65,7 @@
         calendar: null,
         allEvents: [],
         categories: ['식비', '고정비', '교통/차량비', '생활/쇼핑', '여가/문화/교육', '기타 지출', '수입'],
-        currentEditEvent: null, // 현재 수정 중인 이벤트
+        currentEditEvent: null,
 
         init: function () {
             this.initCalendar();
@@ -73,6 +73,7 @@
             this.initModal();
             this.startQuestion();
             this.loadExchangeRates();
+            this.loadFromDatabase(); // DB에서 기존 데이터 로드
 
             $('#send').click(() => {
                 this.send();
@@ -89,12 +90,10 @@
 
         // 모달 초기화
         initModal: function() {
-            // 저장 버튼
             $('#saveEdit').click(() => {
                 this.saveEventEdit();
             });
 
-            // 삭제 버튼
             $('#deleteEvent').click(() => {
                 this.deleteEvent();
             });
@@ -110,7 +109,14 @@
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                    right: 'dayGridMonth,listAll,listMonth'
+                },
+                views: {
+                    listAll: {
+                        type: 'list',
+                        duration: { years: 1 },
+                        buttonText: 'listYear'
+                    }
                 },
                 editable: true,
                 events: [],
@@ -125,23 +131,66 @@
             this.calendar.render();
         },
 
+        // DB에서 데이터 로드
+        loadFromDatabase: async function() {
+            try {
+                const response = await fetch('/accountbook/list');
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        console.log('로그인이 필요합니다.');
+                        return;
+                    }
+                    throw new Error('데이터 로드 실패');
+                }
+
+                const data = await response.json();
+                console.log('DB에서 로드된 데이터:', data.length + '건');
+
+                // DB 데이터를 캘린더에 추가
+                data.forEach(item => {
+                    const isExpense = item.type === 'expense';
+                    const event = {
+                        id: 'db-' + item.id, // DB ID 구분
+                        title: '[' + item.category + '] ' + item.amount.toLocaleString() + '원 ' + item.memo,
+                        start: item.transactionDate,
+                        allDay: true,
+                        color: isExpense ? '#e57373' : '#81c784',
+                        extendedProps: {
+                            dbId: item.id, // DB ID 저장
+                            amount: item.amount,
+                            memo: item.memo,
+                            type: item.type,
+                            category: item.category
+                        }
+                    };
+
+                    this.allEvents.push(event);
+                    this.calendar.addEvent(event);
+                });
+
+                this.updateStats();
+
+            } catch (error) {
+                console.error('DB 로드 오류:', error);
+            }
+        },
+
         // 수정 모달 열기
         openEditModal: function(event) {
             this.currentEditEvent = event;
 
-            // 모달에 데이터 채우기
             $('#editDate').val(event.startStr);
             $('#editCategory').val(event.extendedProps.category);
             $('#editAmount').val(event.extendedProps.amount);
             $('#editMemo').val(event.extendedProps.memo);
             $('#editType').val(event.extendedProps.type);
 
-            // 모달 열기
             $('#editModal').modal('show');
         },
 
         // 이벤트 수정 저장
-        saveEventEdit: function() {
+        saveEventEdit: async function() {
             if (!this.currentEditEvent) return;
 
             let newDate = $('#editDate').val();
@@ -155,7 +204,38 @@
                 return;
             }
 
-            // 이벤트 업데이트
+            // DB 업데이트
+            if (this.currentEditEvent.extendedProps.dbId) {
+                try {
+                    const response = await fetch('/accountbook/update', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id: this.currentEditEvent.extendedProps.dbId,
+                            transactionDate: newDate,
+                            category: newCategory,
+                            amount: newAmount,
+                            type: newType,
+                            memo: newMemo
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('수정 실패');
+                    }
+
+                    const result = await response.json();
+                    console.log('DB 수정 완료:', result.message);
+
+                } catch (error) {
+                    console.error('DB 수정 오류:', error);
+                    return;
+                }
+            }
+
+            // 캘린더 업데이트
             this.currentEditEvent.setProp('title', '[' + newCategory + '] ' + newAmount.toLocaleString() + '원 ' + newMemo);
             this.currentEditEvent.setStart(newDate);
             this.currentEditEvent.setEnd(null);
@@ -164,17 +244,14 @@
             this.currentEditEvent.setExtendedProp('memo', newMemo);
             this.currentEditEvent.setExtendedProp('type', newType);
 
-            // 색상 변경
             let isExpense = newType === 'expense';
             this.currentEditEvent.setProp('color', isExpense ? '#e57373' : '#81c784');
 
-            // allEvents 배열도 업데이트
+            // allEvents 배열 업데이트
             let eventIndex = this.allEvents.findIndex(e => e.id === this.currentEditEvent.id);
             if (eventIndex !== -1) {
                 this.allEvents[eventIndex].title = '[' + newCategory + '] ' + newAmount.toLocaleString() + '원 ' + newMemo;
                 this.allEvents[eventIndex].start = newDate;
-                this.allEvents[eventIndex].allDay = true;
-                delete this.allEvents[eventIndex].end;
                 this.allEvents[eventIndex].extendedProps.category = newCategory;
                 this.allEvents[eventIndex].extendedProps.amount = newAmount;
                 this.allEvents[eventIndex].extendedProps.memo = newMemo;
@@ -188,16 +265,37 @@
         },
 
         // 이벤트 삭제
-        deleteEvent: function() {
+        deleteEvent: async function() {
             if (!this.currentEditEvent) return;
 
-            if (confirm('정말 삭제하시겠습니까?')) {
-                this.currentEditEvent.remove();
-                this.removeFromAllEvents(this.currentEditEvent.id);
-                this.updateStats();
-                $('#editModal').modal('hide');
-                this.currentEditEvent = null;
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+
+            // DB 삭제
+            if (this.currentEditEvent.extendedProps.dbId) {
+                try {
+                    const response = await fetch('/accountbook/delete/' + this.currentEditEvent.extendedProps.dbId, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('삭제 실패');
+                    }
+
+                    const result = await response.json();
+                    console.log('DB 삭제 완료:', result.message);
+
+                } catch (error) {
+                    console.error('DB 삭제 오류:', error);
+                    return;
+                }
             }
+
+            // 캘린더에서 삭제
+            this.currentEditEvent.remove();
+            this.removeFromAllEvents(this.currentEditEvent.id);
+            this.updateStats();
+            $('#editModal').modal('hide');
+            this.currentEditEvent = null;
         },
 
         // 필터 및 검색 초기화
@@ -316,15 +414,17 @@
                 let transactions = Array.isArray(data) ? data : [data];
 
                 let validTransactions = transactions.filter(function(item) {
-                    return item && item.date && item.amount;
+                    return item && item.transactionDate && item.amount;
                 });
 
                 if (validTransactions.length === 0) {
                     throw new Error('AI가 날짜와 금액을 추출하지 못했습니다.');
                 }
 
-                // 환율 변환 처리
+                // 환율 변환 및 데이터 준비
                 let summaries = [];
+                let dbTransactions = []; // DB 저장용 배열
+
                 for (let i = 0; i < validTransactions.length; i++) {
                     let transaction = validTransactions[i];
 
@@ -333,26 +433,37 @@
                         let originalAmount = transaction.amount;
                         let originalCurrency = transaction.currency;
 
-                        // 원화로 변환
                         let krwAmount = this.convertToKRW(originalAmount, originalCurrency);
 
-                        // 메모에 원래 금액 추가
                         transaction.memo = transaction.memo + ' (' + this.formatCurrency(originalAmount, originalCurrency) + ')';
                         transaction.amount = krwAmount;
                         transaction.currency = 'KRW';
-
-                        console.log('환율 변환: ' + originalAmount + ' ' + originalCurrency + ' → ' + krwAmount + ' KRW');
                     }
 
+                    // 캘린더에 추가
                     this.addEventToCalendar(transaction);
+
+                    // DB 저장용 데이터 준비
+                    dbTransactions.push({
+                        transactionDate: transaction.transactionDate,
+                        category: transaction.category,
+                        amount: transaction.amount,
+                        type: transaction.type,
+                        memo: transaction.memo,
+                        currency: transaction.currency || 'KRW'
+                    });
+
                     let typeStr = transaction.type === 'expense' ? '지출' : '수입';
                     summaries.push(transaction.category + ' ' + transaction.amount.toLocaleString() + '원 ' + typeStr);
                 }
 
+                // DB에 저장
+                await this.saveToDatabase(dbTransactions);
+
                 if (validTransactions.length === 1) {
                     let t = validTransactions[0];
                     let typeStr = t.type === 'expense' ? '지출' : '수입';
-                    confirmationMsg = t.date + '에 ' + t.category + ' 항목으로 ' + t.amount.toLocaleString() + '원 ' + typeStr + ' 내역을 등록했습니다.';
+                    confirmationMsg = t.transactionDate + '에 ' + t.category + ' 항목으로 ' + t.amount.toLocaleString() + '원 ' + typeStr + ' 내역을 등록했습니다.';
                 } else {
                     confirmationMsg = '총 ' + validTransactions.length + '건의 내역을 등록했습니다. ' + summaries.join(', ');
                 }
@@ -362,6 +473,29 @@
                 confirmationMsg = '오류가 발생했습니다: ' + error.message + ' (예: 오늘 식비 5천원 지출)';
             } finally {
                 await this.speak(confirmationMsg);
+            }
+        },
+
+        // DB 저장 함수
+        saveToDatabase: async function(transactions) {
+            try {
+                const response = await fetch('/accountbook/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(transactions)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'DB 저장 실패');
+                }
+
+                const result = await response.json();
+
+            } catch (error) {
+                console.error('DB 저장 오류:', error);
             }
         },
 
@@ -389,7 +523,7 @@
             let newEvent = {
                 id: eventId,
                 title: '[' + data.category + '] ' + data.amount.toLocaleString() + '원 ' + data.memo,
-                start: data.date,
+                start: data.transactionDate,
                 allDay: true,
                 color: isExpense ? '#e57373' : '#81c784',
                 extendedProps: {
@@ -407,7 +541,7 @@
                 this.calendar.addEvent(newEvent);
             }
 
-            this.calendar.gotoDate(data.date);
+            this.calendar.gotoDate(data.transactionDate);
             this.updateStats();
         },
 
