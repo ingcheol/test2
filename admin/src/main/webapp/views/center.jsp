@@ -47,6 +47,46 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white !important;
     }
+
+    /* ========== 차량 인식 전용 스타일 ========== */
+    .car-status-success {
+        background-color: #d4edda;
+        border: 2px solid #28a745;
+        color: #155724;
+    }
+
+    .car-status-danger {
+        background-color: #f8d7da;
+        border: 2px solid #dc3545;
+        color: #721c24;
+    }
+
+    #generatedImage {
+        transition: all 0.3s ease;
+        border: 3px solid #dee2e6;
+    }
+
+    #generatedImage.updated {
+        border-color: #28a745;
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        animation: pulse 1s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .car-info-text {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 14px;
+        line-height: 1.6;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #007bff;
+    }
 </style>
 
 <script>
@@ -99,34 +139,85 @@
         connect:function(){
             let url = '${sseUrl}'+'connect/'+this.adminId ;
             const sse = new EventSource(url);
+
             sse.addEventListener('connect', (e) => {
                 const { data: receivedConnectData } = e;
-                console.log('connect event data: ',receivedConnectData);
+                console.log('✅ SSE 연결 성공:', receivedConnectData);
             });
+
+            // ===== 차량 인식 데이터 수신 =====
             sse.addEventListener('aimsg', e => {
                 const { data: data } = e;
-                console.log("msg :",data);
-
-                const result = JSON.parse(data).result;
-                $('#aimsg').html(result.trim());
-
-                const base64Src = "data:image/png;base64," + JSON.parse(data).base64File;
-                const generatedImage = document.getElementById("generatedImage");
-                generatedImage.src = base64Src;
+                console.log("🚗 차량 인식 데이터 수신:", data);
+                this.handleCarRecognition(data);
             });
+
             sse.addEventListener('count', e => {
                 const { data: receivedCount } = e;
                 console.log("count :",receivedCount);
-                // 카운트업 애니메이션 적용
                 const countElement = $('#count')[0];
                 const oldValue = parseInt($('#count').text().replace(/[$,]/g, '')) || 0;
                 const newValue = parseInt(receivedCount);
                 animateValue(countElement, oldValue, newValue, 500);
             });
+
             sse.addEventListener('adminmsg', e => {
                 const { data: receivedData } = e;
                 this.display(JSON.parse(receivedData));
             });
+        },
+
+        // ===== 차량 인식 데이터 처리 함수 =====
+        handleCarRecognition:function(data) {
+            try {
+                const parsedData = JSON.parse(data);
+                const result = parsedData.result;
+                const base64File = parsedData.base64File;
+
+                console.log("차량 인식 결과:", result);
+
+                // 결과 텍스트 업데이트
+                $('#carInfoText').html(result.trim()).addClass('fade-in');
+
+                // 이미지 업데이트
+                const base64Src = "data:image/png;base64," + base64File;
+                const imgElement = document.getElementById("carImage");
+                imgElement.src = base64Src;
+                imgElement.classList.add('updated');
+                setTimeout(() => imgElement.classList.remove('updated'), 2000);
+
+                // 차량 인식 성공/실패 판단
+                const isSuccess = result.includes('차단기 올림');
+                const statusDiv = $('#carRecognitionStatus');
+
+                if(isSuccess) {
+                    statusDiv.removeClass('alert-danger car-status-danger')
+                        .addClass('alert-success car-status-success')
+                        .html(`
+                                <h5 class="mb-2">✅ 등록된 차량입니다!</h5>
+                                <p class="mb-0">차단기를 올립니다. 안전한 주차 되세요.</p>
+                            `)
+                        .fadeIn();
+                } else {
+                    statusDiv.removeClass('alert-success car-status-success')
+                        .addClass('alert-danger car-status-danger')
+                        .html(`
+                                <h5 class="mb-2">❌ 등록되지 않은 차량</h5>
+                                <p class="mb-0">차단기를 내립니다. 관리자에게 문의하세요.</p>
+                            `)
+                        .fadeIn();
+                }
+
+                // 시간 업데이트
+                const now = new Date();
+                const timeStr = now.toLocaleString('ko-KR');
+                $('#lastUpdateTime').text(timeStr);
+
+                console.log('✅ 차량 인식 UI 업데이트 완료');
+
+            } catch(error) {
+                console.error('❌ 차량 인식 데이터 처리 오류:', error);
+            }
         },
 
         display:function(data){
@@ -413,16 +504,71 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
-        <a href="/chart" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
-                class="fas fa-chart-bar fa-sm text-white-50"></i> 상세 분석 보기</a>
-    </div>
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h5 class="h5 mb-0 text-gray-800" id="aimsg"></h5>
-        <img id="generatedImage" src="/img/assistant.png"
-             width="100px;" class="img-fluid" alt="Generated Image" />
+        <a href="/chart" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-chart-bar fa-sm text-white-50"></i> 상세 분석 보기
+        </a>
     </div>
 
-    <!-- ========== 새로운 통계 카드 추가 ========== -->
+    <!-- ========== 차량 인식 실시간 모니터링 섹션 ========== -->
+    <div class="row mb-4">
+        <div class="col-xl-12">
+            <div class="card shadow">
+                <div class="card-header py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h6 class="m-0 font-weight-bold text-white">
+                        🚗 스마트 주차장 실시간 모니터링
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 차량 이미지 -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-info text-white">
+                                    📸 최근 차량 이미지
+                                </div>
+                                <div class="card-body text-center">
+                                    <img id="carImage"
+                                         src="/img/assistant.png"
+                                         class="img-fluid rounded shadow"
+                                         alt="차량 이미지"
+                                         style="max-height: 300px; object-fit: contain;" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 차량 인식 결과 -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    📋 차량 인식 결과
+                                </div>
+                                <div class="card-body">
+                                    <!-- 상태 메시지 -->
+                                    <div id="carRecognitionStatus" class="alert mb-3" style="display: none;"></div>
+
+                                    <!-- 상세 정보 -->
+                                    <div class="mb-3">
+                                        <h6 class="font-weight-bold mb-2">상세 정보:</h6>
+                                        <div id="carInfoText" class="car-info-text">대기 중...</div>
+                                    </div>
+
+                                    <!-- 최종 업데이트 시간 -->
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i>
+                                            최종 업데이트: <span id="lastUpdateTime">-</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 통계 카드 ========== -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
@@ -493,7 +639,7 @@
         </div>
     </div>
 
-    <!-- ========== 새로운 차트 섹션 ========== -->
+    <!-- ========== 차트 섹션 ========== -->
     <div class="row">
         <div class="col-xl-12">
             <div class="card shadow mb-4">
