@@ -62,7 +62,7 @@ public class AiSttService {
         extract both the original amount AND currency code. If no currency is mentioned, use "KRW".
         
         Rules:
-        1. Return JSON array format: [{"date":"YYYY-MM-DD","category":"카테고리","amount":숫자,"currency":"통화코드","type":"expense or income","memo":"설명"}]
+        1. Return JSON array format: [{"transactionDate":"YYYY-MM-DD","category":"카테고리","amount":숫자,"currency":"통화코드","type":"expense or income","memo":"설명"}]
         2. If currency is mentioned, include "currency" field (USD, JPY, EUR, CNY, VND, THB, PHP, TWD, HKD, AUD, KRW)
         3. If no currency mentioned, use "KRW" as default
         4. Categories: 식비, 고정비, 교통/차량비, 생활/쇼핑, 여가/문화/교육, 기타 지출, 수입
