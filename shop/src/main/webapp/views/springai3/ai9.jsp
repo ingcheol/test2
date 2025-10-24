@@ -142,7 +142,7 @@
           $('#statusMessage').removeClass('status-fail').addClass('status-success');
           $('#statusMessage').html(`
             <h5>✅ 등록된 차량입니다!</h5>
-            <p>차단기를 올립니다. 스마트홈 시스템을 활성화합니다.</p>
+            <p>차단기를 올립니다. 안전한 주차 되세요..</p>
           `);
         } else {
           // 미등록 차량 - 실패 메시지
