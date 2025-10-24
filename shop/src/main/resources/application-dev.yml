@@ -62,6 +62,7 @@ app:
     logsdir: file:///C:/smspring/logs/     # 화면 출력 용
     logsdirRead: C:/smspring/logs/  #  Read 용
   key:
+    travel-safety-key: FS%
     skey: ${MY_KEY}
     algo: PBEWithMD5AndDES
     wkey: ENC(2hVNthZA5KlX7Hi6ow3pPTHPbML3w9MiiFjcZC76z1gV/iHPACQMY89q0CfK/knK0F1bFQuQ2tsarrZVbOkvjFbkkVzTOyYtCgo2qza+hu6k9WBQrShR7blvGPohoWQdjRe5ahrC8rbLhrhC7MHZlg==)

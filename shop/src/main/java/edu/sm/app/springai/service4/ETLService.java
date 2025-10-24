@@ -9,6 +9,7 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.TextReader;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -20,129 +21,161 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Flux;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @Slf4j
 public class ETLService {
-    // ##### 필드 #####
-    private ChatClient chatClient;
-    @Autowired
-    private VectorStore vectorStore;
-    @Autowired private JdbcTemplate jdbcTemplate;
+  private ChatClient chatClient;
+  @Autowired
+  private VectorStore vectorStore;
+  @Autowired
+  private JdbcTemplate jdbcTemplate;
 
+  public ETLService(ChatClient.Builder chatClientBuilder) {
+    this.chatClient = chatClientBuilder
+        .defaultAdvisors(
+            new SimpleLoggerAdvisor(Ordered.LOWEST_PRECEDENCE - 1)
+        )
+        .build();
+  }
 
-    // ##### 생성자 #####
-    public ETLService(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder
-                .defaultAdvisors(
-                        new SimpleLoggerAdvisor(Ordered.LOWEST_PRECEDENCE - 1)
-                )
-                .build();
+  public void clearVectorStore() {
+    jdbcTemplate.update("TRUNCATE TABLE vector_store");
+    log.info("벡터 저장소 초기화 완료");
+  }
+
+  public String etlFromFile(String type, MultipartFile attach) throws IOException {
+    log.info("ETL 시작 - 파일: {}, 구분: {}", attach.getOriginalFilename(), type);
+
+    List<Document> documents = extractFromFile(attach);
+    if (documents == null) {
+      return ".txt, .pdf, .doc, .docx 파일 중에 하나를 올려주세요.";
+    }
+    log.info("추출된 Document 수: {} 개", documents.size());
+
+    for (Document doc : documents) {
+      doc.getMetadata().put("type", type);
+      doc.getMetadata().put("filename", attach.getOriginalFilename());
     }
 
-    // ##### 벡터 저장소의 데이터를 모두 삭제하는 메소드 #####
-    public void clearVectorStore() {
-        jdbcTemplate.update("TRUNCATE TABLE vector_store");
+    documents = transform(documents);
+    log.info("변환된 Document 수: {} 개", documents.size());
+
+    vectorStore.add(documents);
+    log.info("벡터 저장 완료");
+
+    return String.format(
+        "성공!\n- 파일명: %s\n- 구분: %s\n- 저장된 chunk 수: %d개",
+        attach.getOriginalFilename(),
+        type,
+        documents.size()
+    );
+  }
+
+  private List<Document> extractFromFile(MultipartFile attach) throws IOException {
+    Resource resource = new ByteArrayResource(attach.getBytes());
+    List<Document> documents = null;
+
+    String contentType = attach.getContentType();
+    log.info("파일 타입: {}", contentType);
+
+    if ("text/plain".equals(contentType)) {
+      DocumentReader reader = new TextReader(resource);
+      documents = reader.read();
+    } else if ("application/pdf".equals(contentType)) {
+      DocumentReader reader = new PagePdfDocumentReader(resource);
+      documents = reader.read();
+    } else if (contentType != null && contentType.contains("wordprocessingml")) {
+      DocumentReader reader = new TikaDocumentReader(resource);
+      documents = reader.read();
     }
 
+    return documents;
+  }
 
-    // ##### 업로드된 파일을 가지고 ETL 과정을 처리하는 메소드 #####
-    public String etlFromFile(String type, MultipartFile attach) throws IOException {
+  private List<Document> transform(List<Document> documents) {
+    List<Document> result = new ArrayList<>();
 
-        // 추출하기
-        List<Document> documents = extractFromFile(attach);
-        if (documents == null) {
-            return ".txt, .pdf, .doc, .docx 파일 중에 하나를 올려주세요.";
+    for (Document doc : documents) {
+      String content = doc.getText();
+
+      content = content.replaceAll("\\s+", " ");
+      content = content.trim();
+
+      // 빈 줄 기준으로 분할 (맛집 항목 사이)
+      String[] items = content.split("\n\n+");
+
+      for (String item : items) {
+        String trimmed = item.trim();
+
+        // 최소 길이 체크 (너무 짧은 건 제외)
+        if (trimmed.length() > 20) {
+          // 새 Document 생성 (메타데이터 유지)
+          Document newDoc = new Document(trimmed, doc.getMetadata());
+          result.add(newDoc);
         }
-        log.info("추출된 Document 수: {} 개", documents.size());
-        for (Document doc : documents) {
-            doc.getMetadata().put("type", type);
-        }
-        // 메타데이터에 공통 정보 추가하기
-//    for (Document doc : documents) {
-//      Map<String, Object> metadata = doc.getMetadata();
-//      metadata.putAll(Map.of(
-//          "type", type,
-//          "source", attach.getOriginalFilename()));
-//    }
-
-        // 변환하기
-        documents = transform(documents);
-        log.info("변환된 Document 수: {} 개", documents.size());
-
-        // 적재하기
-        vectorStore.add(documents);
-
-        return "올린 문서를 추출-변환-적재 완료 했습니다.";
+      }
     }
 
-    // ##### 업로드된 파일로부터 텍스트를 추출하는 메소드 #####
-    private List<Document> extractFromFile(MultipartFile attach) throws IOException {
-        // 바이트 배열을 Resource로 생성
-        Resource resource = new ByteArrayResource(attach.getBytes());
+    log.info("총 {} 개의 청크 생성됨", result.size());
+    return result;
+  }
 
-        List<Document> documents = null;
-        if (attach.getContentType().equals("text/plain")) {
-            // Text(.txt) 파일일 경우
-            DocumentReader reader = new TextReader(resource);
-            documents = reader.read();
-        } else if (attach.getContentType().equals("application/pdf")) {
-            // PDF(.pdf) 파일일 경우
-            DocumentReader reader = new PagePdfDocumentReader(resource);
-            documents = reader.read();
-        } else if (attach.getContentType().contains("wordprocessingml")) {
-            // Word(.doc, .docx) 파일일 경우
-            DocumentReader reader = new TikaDocumentReader(resource);
-            documents = reader.read();
-        }
+  // Flux 대신 String 반환
+  public String ragChat(String question, String type) {
+    log.info("RAG Chat 시작 - 질문: [{}], 구분: [{}]", question, type);
 
-        return documents;
+    if (!StringUtils.hasText(question)) {
+      return "질문을 입력해주세요.";
     }
 
-    // ##### 작은 크기로 분할하고 키워드 메타데이터를 추가하는 메소드 #####
-    private List<Document> transform(List<Document> documents) {
-        List<Document> transformedDocuments = null;
+    SearchRequest.Builder searchRequestBuilder = SearchRequest.builder()
+        .query(question)
+        .similarityThreshold(0.5)
+        .topK(10);
 
-        // 작게 분할하기
-        TokenTextSplitter tokenTextSplitter = new TokenTextSplitter();
-        transformedDocuments = tokenTextSplitter.apply(documents);
-
-        return transformedDocuments;
+    if (StringUtils.hasText(type)) {
+      searchRequestBuilder.filterExpression("type == '%s'".formatted(type));
+      log.info("필터 적용: type == '{}'", type);
     }
 
-    // ##### LLM과 대화하는 메소드 #####
-    public Flux<String> ragChat(String question, String type) {
-        // 벡터 저장소 검색 조건 생성
-        SearchRequest.Builder searchRequestBuilder = SearchRequest.builder()
-                .similarityThreshold(0.0)
-                .topK(3);
-        if (StringUtils.hasText(type)) {
-            searchRequestBuilder.filterExpression("type == '%s'".formatted(type));
-        }
-        SearchRequest searchRequest = searchRequestBuilder.build();
+    SearchRequest searchRequest = searchRequestBuilder.build();
 
+    List<Document> searchResults = vectorStore.similaritySearch(searchRequest);
+    log.info("검색 결과: {} 개 문서 발견", searchResults.size());
 
-        // QuestionAnswerAdvisor 생성
-        QuestionAnswerAdvisor questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
-                .searchRequest(searchRequest)
-                .build();
+    if (searchResults.isEmpty()) {
+      Integer totalDocs = jdbcTemplate.queryForObject(
+          "SELECT COUNT(*) FROM vector_store",
+          Integer.class
+      );
 
-        // 프롬프트를 LLM으로 전송하고 응답을 받는 코드
-//    String answer = this.chatClient.prompt()
-//            .user(question)
-//            .advisors(questionAnswerAdvisor)
-//            .call()
-//            .content();
-        Flux<String> answer = this.chatClient.prompt()
-                .user(question)
-                .advisors(questionAnswerAdvisor)
-                .stream()
-                .content();
-        return answer;
+      List<String> availableTypes = jdbcTemplate.queryForList(
+          "SELECT DISTINCT metadata->>'type' as type FROM vector_store WHERE metadata->>'type' IS NOT NULL",
+          String.class
+      );
+
+      return "업로드한 문서에서 관련 정보를 찾을 수 없습니다.\n\n" +
+          "전체 문서 수: " + (totalDocs != null ? totalDocs : 0) + "개\n" +
+          "사용 가능한 구분: " + availableTypes;
     }
 
+    QuestionAnswerAdvisor questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(searchRequest)
+        .build();
+
+    String answer = this.chatClient.prompt()
+        .user(question)
+        .advisors(questionAnswerAdvisor)
+        .call()
+        .content();
+
+    log.info("응답 완료 - 길이: {} 자", answer.length());
+
+    return answer;
+  }
 }
