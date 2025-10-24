@@ -96,10 +96,10 @@ public class WeatherUtil {
         String sendUrl ="https://api.openweathermap.org/data/2.5/weather";
 
         StringBuilder urlBuilder = new StringBuilder(sendUrl); /*URL*/
-        urlBuilder.append("?" + URLEncoder.encode("id","UTF-8") + "="+loc);
-        urlBuilder.append("&" + URLEncoder.encode("units","UTF-8") + "=" + "metric");
-        urlBuilder.append("&" + URLEncoder.encode("lang","UTF-8") + "=" + "kr");
-        urlBuilder.append("&" + URLEncoder.encode("appid","UTF-8") + "=" + key);
+      urlBuilder.append("?" + URLEncoder.encode("q","UTF-8") + "=" + URLEncoder.encode(loc, "UTF-8"));
+      urlBuilder.append("&" + URLEncoder.encode("units","UTF-8") + "=" + "metric");
+      urlBuilder.append("&" + URLEncoder.encode("lang","UTF-8") + "=" + "kr");
+      urlBuilder.append("&" + URLEncoder.encode("appid","UTF-8") + "=" + key);
 
         URL url = new URL(urlBuilder.toString());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -129,10 +129,10 @@ public class WeatherUtil {
         String sendUrl ="https://api.openweathermap.org/data/2.5/forecast";
 
         StringBuilder urlBuilder = new StringBuilder(sendUrl); /*URL*/
-        urlBuilder.append("?" + URLEncoder.encode("id","UTF-8") + "="+loc);
-        urlBuilder.append("&" + URLEncoder.encode("units","UTF-8") + "=" + "metric");
-        urlBuilder.append("&" + URLEncoder.encode("lang","UTF-8") + "=" + "kr");
-        urlBuilder.append("&" + URLEncoder.encode("appid","UTF-8") + "=" + key);
+      urlBuilder.append("?" + URLEncoder.encode("q","UTF-8") + "=" + URLEncoder.encode(loc, "UTF-8"));
+      urlBuilder.append("&" + URLEncoder.encode("units","UTF-8") + "=" + "metric");
+      urlBuilder.append("&" + URLEncoder.encode("lang","UTF-8") + "=" + "kr");
+      urlBuilder.append("&" + URLEncoder.encode("appid","UTF-8") + "=" + key);
 
         URL url = new URL(urlBuilder.toString());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
