@@ -88,6 +88,24 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - **맞춤 추천**: 해당 장소에서의 추천 항목 3가지 제공
 - **다국어 지원**: 한국어, 영어, 일본어, 중국어 분석 및 안내
 
+### 🚗 스마트 주차장 시스템 (springai3/ai9.jsp)
+
+- **실시간 카메라 모니터링**: 웹캠을 통한 실시간 차량 번호판 촬영
+- **AI 차량 인식**: Vision API를 활용한 자동 번호판 인식
+- **차단기 자동 제어**: 등록된 차량 판별 후 차단기 자동 개폐
+- **등록 차량 관리**: 사전 등록된 차량 번호 리스트 표시
+
+- **실시간 상태 표시**: 인식 성공/실패 시각적 피드백
+- **관리자 서버 연동**: Base64 이미지와 인식 결과를 Admin 서버로 전송
+### 🏠 스마트홈 대시보드 (admin/src/main/webapp/views/center.jsp)
+
+- **실시간 모니터링**:SSE를 통한 차량 입차 정보 실시간 수신
+- **자동 온도 제어**: 등록 차량 입차 시 스마트홈 온도 자동 조절
+- **온도 설정**: 18°C ~ 30°C 범위 내 목표 온도 설정 (권장: 20-24°C)
+
+
+
+상세 정보: 차량 인식 결과, 시간, 상태 로그
 ---
 
 ## ⚙ 기술적 특징
@@ -126,6 +144,7 @@ shop/src/main/webapp/views/
 │   ├── ai3.jsp              # 현지 음식 추천
 │   ├── ai4.jsp              # AI 가계부 & 환전
 │   └── ai5.jsp              # 위치 인식 AI
+│   └── ai9.jsp              # AI 주차 시스템
 ```
 
 ---
@@ -152,6 +171,31 @@ shop/src/main/webapp/views/
 
 ### 위치 인식
 - `/ai3/image-analysis2` - 장소 식별 및 분석
+### 주차장 관리 시스템
+
+-   Shop 서버 (차량 인식)
+
+- POST /ai5/boom-barrier-tools
+
+- 차량 번호판 이미지 분석 및 인식
+- 입력: MultipartFile (이미지)
+- 출력: 인식 결과 텍스트 (차량번호, 등록 여부, 차단기 제어 명령)
+
+- Admin 서버 (데이터 수신 및 제어)
+
+- GET /sse/connect/{adminId}
+
+- SSE 연결 생성 및 실시간 데이터 스트리밍
+- POST /aimsg2
+
+- 차량 인식 결과 수신 및 브로드캐스트
+- 입력: JSON (차량번호, 인식결과, Base64 이미지, 타임스탬프)
+
+- GET /ai5/heating-system-tools
+
+- 스마트홈 온도 제어 시스템
+- 입력: question (목표 온도 명령)
+- 출력: 난방/냉방 제어 결과
 
 ---
 
@@ -182,6 +226,9 @@ ex) https//127.0.0.1:8443/
 ### 위치 인식
 ![위치 인식](admin/src/main/resources/static/img/ai51.png)
 ![위치 인식](admin/src/main/resources/static/img/ai52.png)
+###  AI 주차 시스템
+![AI 주차 시스템](admin/src/main/resources/static/img/sp3ai91.png)
+![AI 주차 시스템](admin/src/main/resources/static/img/sp3ai92.png)
 
 ---
 ### 유튜브 시연 영상
