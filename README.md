@@ -163,7 +163,7 @@ shop/src/main/webapp/views/
 │   ├── ai4.jsp              # AI 가계부 & 환전
 │   └── ai5.jsp              # 위치 인식 AI
 │   └── ai2.jsp              # 여행 안전 정보 AI
-│   └── ai97.jsp              # AI 분리수거 정보
+│   └── ai97.jsp             # AI 분리수거 정보
 ├── springai4/
 │   ├── ai1.jsp              # RAG + 날씨/맛집 AI
 │   └── ai2.jsp              # 여행 안전 정보 AI
@@ -286,8 +286,7 @@ ex) https//127.0.0.1:8443/
 ![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai22.png)
 
 ### 분리수거 AI
-![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai97.png)
-
+![AI 분리수거 시스템](admin/src/main/resources/static/img/springai4ai97.png)
 
 ---
 ### 유튜브 시연 영상
