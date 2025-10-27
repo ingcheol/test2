@@ -467,6 +467,12 @@
                     <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
                       <a href="<c:url value="/springai4/ai2"/>">여행 안전 정보 조회 AI</a>
                     </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                        <a href="<c:url value="/springai3/ai9"/>">AI 주차 시스템</a>
+                    </li>
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-62">
+                        <a href="<c:url value="/springai3/ai5"/>">위치정보 AI</a>
+                    </li>
                 </ul>
             </nav>
     </div>
