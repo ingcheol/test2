@@ -1,5 +1,6 @@
-# 여행
-
+# 유튜브 시연영상
+[[2조 미니 프로젝트]](https://youtu.be/9i1OFRpKQAs)
+[[2조 미니 프로젝트2]](https://youtu.be/H9p4pMnvKjU)
 ---
 
 ## 👥 팀원
@@ -338,4 +339,6 @@ ex) https//127.0.0.1:8443/
 ---
 ### 유튜브 시연 영상
 [[2조 미니 프로젝트]](https://youtu.be/9i1OFRpKQAs)
+[[2조 미니 프로젝트2]](https://youtu.be/H9p4pMnvKjU)
+
 ---
