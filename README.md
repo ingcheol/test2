@@ -1,4 +1,4 @@
-# 여행 
+# 여행
 
 ---
 
@@ -29,6 +29,7 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 ### ✅ Backend
 - Java (Spring Framework)
 - Spring AI
+- Vector DB
 
 ### ✅ AI/ML
 - GPT (텍스트 생성)
@@ -36,9 +37,13 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - Whisper (음성 인식)
 - TTS (음성 합성)
 - Vision API (이미지 분석)
+- RAG, Function Calling(AI대화 내용 저장 및 API 호출)
+
 
 ### ✅ External APIs
 - Exchange Rate API (환율 정보)
+- OpenWeatherMap API (날씨 정보)
+- 외교부 공공데이터 API (여행 안전 정보)
 
 ### ✅ Tools
 - IntelliJ IDEA / GitHub
@@ -103,7 +108,15 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - **자동 온도 제어**: 등록 차량 입차 시 스마트홈 온도 자동 조절
 - **온도 설정**: 18°C ~ 30°C 범위 내 목표 온도 설정 (권장: 20-24°C)
 
+### 문서 기반 대화 (springai4/ai1.jsp)
+- **문서 기반 답변(RAG)**: 사용자가 업로드한 PDF,TXT,DOCX 파일을 벡터 DB에 저장(ETL)하여 챗봇이 참고하여 답변
+- **대화 내용 기억**: ChatMemory를 통해 현재 대화 내용을 기억하고 답변
+- **실시간 날씨 조회**: getWeather를 통해 Util의 getweather2를 호출하여 실시간으로 현재 날씨 및 5일 후의 날씨 제공
+- **맛집 추천**: 저장된 맛집 문서를 참고하여 추천
 
+### 여행 안전 정보 (springai4/ai2.jsp)
+- **실시간 여행 안전 정보**: TravelSafetyTools를 통해 호출하고 TravelSafetyService에서 프롬프트를 작성
+- **외교부 API 연동**: 나라를 입력하면 해당 나라의 여행 경보 단계와 안전 공지를 알려주고 특별여행주의보 발령 여부를 알려줌줌
 
 상세 정보: 차량 인식 결과, 시간, 상태 로그
 ---
@@ -145,6 +158,9 @@ shop/src/main/webapp/views/
 │   ├── ai4.jsp              # AI 가계부 & 환전
 │   └── ai5.jsp              # 위치 인식 AI
 │   └── ai9.jsp              # AI 주차 시스템
+├── springai4/
+│   ├── ai1.jsp              # RAG + 날씨/맛집 AI
+│   └── ai2.jsp              # 여행 안전 정보 AI
 ```
 
 ---
@@ -197,6 +213,11 @@ shop/src/main/webapp/views/
 - 입력: question (목표 온도 명령)
 - 출력: 난방/냉방 제어 결과
 
+### RAG 및 날씨 및 안전 AI
+- `/ai4/txt-pdf-docx-etl` - RAG 문서 업로드 및 벡터화
+- `/ai4/chat-with-tools` - RAG + 날씨/맛집 AI
+- `/ai4/travel-safety-tools` - 여행 안전 정보 AI
+
 ---
 
 ###  브라우저 접속
@@ -229,6 +250,14 @@ ex) https//127.0.0.1:8443/
 ###  AI 주차 시스템
 ![AI 주차 시스템](admin/src/main/resources/static/img/sp3ai91.png)
 ![AI 주차 시스템](admin/src/main/resources/static/img/sp3ai92.png)
+### 문서 기반 대화(날씨/맛집)
+![문서 기반 대화(맛집)](admin/src/main/resources/static/img/springai4ai11.png)
+![문서 기반 대화(맛집)](admin/src/main/resources/static/img/springai4ai12.png)
+![문서 기반 대화(날씨)](admin/src/main/resources/static/img/springai4ai13.png)
+### 여행 안전 AI
+![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai21.png)
+![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai22.png)
+
 
 ---
 ### 유튜브 시연 영상
