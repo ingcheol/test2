@@ -118,6 +118,11 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - **실시간 여행 안전 정보**: TravelSafetyTools를 통해 호출하고 TravelSafetyService에서 프롬프트를 작성
 - **외교부 API 연동**: 나라를 입력하면 해당 나라의 여행 경보 단계와 안전 공지를 알려주고 특별여행주의보 발령 여부를 알려줌줌
 
+### 분리수거 정보 (springai4/ai2.jsp)
+- **실시간 분리수거 정보**: 사용자가 카메라로 사진을 찍거나 이미지를 업로드하면, 
+- AI가 해당 이미지를 분석하여 재활용품 분류 방법과 처리 시 주의사항을 알려줌
+- AI의 답변은 텍스트와 음성(TTS)으로 동시에 제공됩니다.
+
 상세 정보: 차량 인식 결과, 시간, 상태 로그
 ---
 
@@ -157,10 +162,13 @@ shop/src/main/webapp/views/
 │   ├── ai3.jsp              # 현지 음식 추천
 │   ├── ai4.jsp              # AI 가계부 & 환전
 │   └── ai5.jsp              # 위치 인식 AI
-│   └── ai9.jsp              # AI 주차 시스템
+│   └── ai2.jsp              # 여행 안전 정보 AI
+│   └── ai97.jsp              # AI 분리수거 정보
 ├── springai4/
 │   ├── ai1.jsp              # RAG + 날씨/맛집 AI
 │   └── ai2.jsp              # 여행 안전 정보 AI
+
+
 ```
 
 ---
@@ -189,6 +197,12 @@ shop/src/main/webapp/views/
 - `/ai3/image-analysis2` - 장소 식별 및 분석
 ### 주차장 관리 시스템
 
+### 분리수거 정보
+- `/ai3/translate` - 음성 번역
+- `/ai3/tts` - 텍스트를 음성으로 변환
+- `/ai3/image-analysis2` - 이미지 분석 및 해설
+
+
 -   Shop 서버 (차량 인식)
 
 - POST /ai5/boom-barrier-tools
@@ -212,6 +226,19 @@ shop/src/main/webapp/views/
 - 스마트홈 온도 제어 시스템
 - 입력: question (목표 온도 명령)
 - 출력: 난방/냉방 제어 결과
+
+
+-   Shop 서버 (분리수거)
+
+- sendForInspection():
+- 가장 중요한 함수 '검사 시작' 버튼을 누르면 실행
+- 카메라 이미지 또는 업로드한 파일을 가져옴
+
+- getPromptByLanguage로 프롬프트를 가져옴
+- FormData에 이미지와 프롬프트를 담아 fetch로 /ai3/vehicle-inspection에 전송
+- 서버로부터 text와 audio가 담긴 JSON 응답을 받음
+
+- makeResultUi를 호출해 UI를 만들고, 오디오 재생과 텍스트 표시를 즉시 실행
 
 ### RAG 및 날씨 및 안전 AI
 - `/ai4/txt-pdf-docx-etl` - RAG 문서 업로드 및 벡터화
@@ -257,6 +284,9 @@ ex) https//127.0.0.1:8443/
 ### 여행 안전 AI
 ![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai21.png)
 ![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai22.png)
+
+### 분리수거 AI
+![여행 안전 정보 조회](admin/src/main/resources/static/img/springai4ai97.png)
 
 
 ---
