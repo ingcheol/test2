@@ -74,6 +74,13 @@ public class SpringAI3Controller {
         model.addAttribute("left", dir+"left");
         return "index";
     }
+    @RequestMapping("/ai97")
+    public String ai97(Model model) {
+        model.addAttribute("adminserver",adminServer);
+        model.addAttribute("center", dir+"ai97");
+        model.addAttribute("left", dir+"left");
+        return "index";
+    }
 }
 
 
