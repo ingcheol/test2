@@ -10,13 +10,6 @@
         transform: translateY(-5px);
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
     }
-    .card:hover .col-auto i {
-        animation: rotate 0.6s ease-in-out;
-    }
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
 
     /* 페이드인 효과 */
     @keyframes fadeIn {
@@ -25,384 +18,212 @@
     }
     .fade-in-card {
         animation: fadeIn 0.6s ease-out;
-        animation-fill-mode: both;
-    }
-    .fade-in-card:nth-child(1) { animation-delay: 0.1s; }
-    .fade-in-card:nth-child(2) { animation-delay: 0.2s; }
-    .fade-in-card:nth-child(3) { animation-delay: 0.3s; }
-    .fade-in-card:nth-child(4) { animation-delay: 0.4s; }
-
-    /* 프로그레스 바 */
-    .progress-bar {
-        transition: width 1s ease-in-out;
     }
 
-    /* 차트 컨테이너 */
-    .enhanced-chart-container {
-        width: 100%;
-        height: 350px;
-        margin-bottom: 20px;
+    /* 온도 인디케이터 */
+    .temperature-indicator {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition: all 0.5s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 0 auto;
     }
-    .card-header-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white !important;
+
+    .temperature-indicator.heating {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+        box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .temperature-indicator.cooling {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        box-shadow: 0 8px 20px rgba(79, 172, 254, 0.5);
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .temp-value {
+        font-size: 22px;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .temperature-indicator.heating .temp-value,
+    .temperature-indicator.cooling .temp-value {
+        color: white;
+    }
+
+    .temp-label {
+        font-size: 10px;
+        color: #999;
+        margin-top: 3px;
+    }
+
+    .temperature-indicator.heating .temp-label,
+    .temperature-indicator.cooling .temp-label {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* 차량 인식 스타일 */
+    .car-status-success {
+        background-color: #d4edda;
+        border: 2px solid #28a745;
+        color: #155724;
+    }
+
+    .car-status-danger {
+        background-color: #f8d7da;
+        border: 2px solid #dc3545;
+        color: #721c24;
+    }
+
+    .car-info-text {
+        white-space: pre-wrap;
+        font-size: 14px;
+        line-height: 1.6;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #007bff;
     }
 </style>
 
 <script>
-    // 숫자 카운트업 애니메이션
-    function animateValue(element, start, end, duration) {
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            const value = Math.floor(progress * (end - start) + start);
-            element.textContent = value.toLocaleString();
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
-            }
-        };
-        window.requestAnimationFrame(step);
-    }
-
     let center = {
-        adminId:null,
-        init:function(){
+        adminId: null,
+        targetTemperature: 22,
+
+        init: function() {
             <c:if test="${sessionScope.admin.adminId != null}">
             this.adminId = '${sessionScope.admin.adminId}';
             this.connect();
             </c:if>
 
-            // 카드 애니메이션 초기화
-            this.initCardAnimations();
-
-            // 차트 초기화
-            this.initEnhancedCharts();
+            this.initTemperatureControl();
         },
 
-        initCardAnimations:function(){
-            // 모든 카드에 fade-in 효과
-            $('.card').addClass('fade-in-card');
-
-            // 프로그레스 바 애니메이션
-            setTimeout(() => {
-                $('.progress-bar').each(function() {
-                    const targetWidth = $(this).attr('aria-valuenow');
-                    $(this).css('width', '0%');
-                    setTimeout(() => {
-                        $(this).css('width', targetWidth + '%');
-                    }, 100);
-                });
-            }, 500);
-        },
-
-        connect:function(){
-            let url = '${sseUrl}'+'connect/'+this.adminId ;
+        connect: function() {
+            let url = '${sseUrl}connect/' + this.adminId;
             const sse = new EventSource(url);
+
             sse.addEventListener('connect', (e) => {
-                const { data: receivedConnectData } = e;
-                console.log('connect event data: ',receivedConnectData);
+                console.log('SSE 연결:', e.data);
             });
-            sse.addEventListener('aimsg', e => {
-                const { data: data } = e;
-                console.log("msg :",data);
 
-                const result = JSON.parse(data).result;
-                $('#aimsg').html(result.trim());
-
-                const base64Src = "data:image/png;base64," + JSON.parse(data).base64File;
-                const generatedImage = document.getElementById("generatedImage");
-                generatedImage.src = base64Src;
-            });
-            sse.addEventListener('count', e => {
-                const { data: receivedCount } = e;
-                console.log("count :",receivedCount);
-                // 카운트업 애니메이션 적용
-                const countElement = $('#count')[0];
-                const oldValue = parseInt($('#count').text().replace(/[$,]/g, '')) || 0;
-                const newValue = parseInt(receivedCount);
-                animateValue(countElement, oldValue, newValue, 500);
-            });
-            sse.addEventListener('adminmsg', e => {
-                const { data: receivedData } = e;
-                this.display(JSON.parse(receivedData));
+            sse.addEventListener('aimsg', (e) => {
+                console.log('차량 인식 데이터:', e.data);
+                this.handleCarRecognition(e.data);
             });
         },
 
-        display:function(data){
-            // 숫자 애니메이션과 함께 업데이트
-            const msg1 = $('#msg1')[0];
-            const msg2 = $('#msg2')[0];
-            const msg3 = $('#msg3')[0];
-            const msg4 = $('#msg4')[0];
+        initTemperatureControl: function() {
+            $('#targetTempInput').on('change', (e) => {
+                this.targetTemperature = parseInt(e.target.value);
+                $('#targetTempDisplay').text(this.targetTemperature + '°C');
+            });
+            $('#targetTempDisplay').text(this.targetTemperature + '°C');
+        },
 
-            animateValue(msg1, parseInt($('#msg1').text()) || 0, data.content1, 500);
-            animateValue(msg2, parseInt($('#msg2').text()) || 0, data.content2, 500);
-            animateValue(msg3, parseInt($('#msg3').text()) || 0, data.content3, 500);
-            animateValue(msg4, parseInt($('#msg4').text()) || 0, data.content4, 500);
+        handleCarRecognition: function(data) {
+            try {
+                const parsedData = JSON.parse(data);
+                const result = parsedData.result;
+                const base64File = parsedData.base64File;
 
-            // 프로그레스 바 애니메이션
-            $('#progress1').css('width', '0%');
+                $('#carInfoText').html(result.trim());
+
+                const base64Src = "data:image/png;base64," + base64File;
+                $('#carImage').attr('src', base64Src);
+
+                const isSuccess = result.includes('차단기 올림');
+                const statusDiv = $('#carRecognitionStatus');
+
+                if (isSuccess) {
+                    statusDiv.removeClass('alert-danger car-status-danger')
+                        .addClass('alert-success car-status-success')
+                        .html('<h5>✅ 등록된 차량입니다!</h5><p class="mb-0">차단기를 올립니다. 스마트홈 시스템을 활성화합니다.</p>')
+                        .fadeIn();
+
+                    this.controlTemperature();
+                } else {
+                    statusDiv.removeClass('alert-success car-status-success')
+                        .addClass('alert-danger car-status-danger')
+                        .html('<h5>❌ 등록되지 않은 차량</h5><p class="mb-0">차단기를 내립니다.</p>')
+                        .fadeIn();
+
+                    this.resetTemperature();
+                }
+
+                const now = new Date();
+                $('#lastUpdateTime').text(now.toLocaleString('ko-KR'));
+
+            } catch(error) {
+                console.error('차량 인식 오류:', error);
+            }
+        },
+
+        controlTemperature: function() {
+            console.log('온도 제어 시작...');
+
+            const question = '현재 온도를 확인하고, ' + this.targetTemperature + '도로 맞춰주세요.';
+
+            $.ajax({
+                url: '/ai5/heating-system-tools',
+                type: 'GET',
+                data: { question: question },
+                success: (response) => {
+                    console.log('온도 제어 응답:', response);
+                    this.updateTemperatureUI(response);
+                },
+                error: (error) => {
+                    console.error('온도 제어 실패:', error);
+                    $('#tempStatus').html('<i class="fas fa-exclamation-triangle text-warning"></i> <strong>제어 실패</strong>');
+                }
+            });
+        },
+
+        updateTemperatureUI: function(response) {
+            const indicator = $('.temperature-indicator');
+            const tempStatus = $('#tempStatus');
+
+            if (response.includes('난방') || response.includes('가동')) {
+                indicator.removeClass('cooling').addClass('heating');
+                tempStatus.html('<i class="fas fa-fire text-danger"></i> <strong>난방 가동 중</strong><br><small>목표: ' + this.targetTemperature + '°C</small>');
+            } else if (response.includes('중지')) {
+                indicator.removeClass('heating cooling');
+                tempStatus.html('<i class="fas fa-check-circle text-success"></i> <strong>목표 온도 도달</strong><br><small>' + this.targetTemperature + '°C 유지</small>');
+            } else {
+                indicator.removeClass('heating').addClass('cooling');
+                tempStatus.html('<i class="fas fa-snowflake text-info"></i> <strong>냉방 가동 중</strong><br><small>목표: ' + this.targetTemperature + '°C</small>');
+            }
+
+            indicator.find('.temp-value').text(this.targetTemperature + '°');
+
             setTimeout(() => {
-                $('#progress1').css('width', data.content1/100*100+'%');
-                $('#progress1').attr('aria-valuenow', data.content1/100*100);
-            }, 100);
-
-            $('#progress2').css('width', '0%');
-            setTimeout(() => {
-                $('#progress2').css('width', data.content2/1000*100+'%');
-                $('#progress2').attr('aria-valuenow', data.content2/1000*100);
-            }, 200);
-
-            $('#progress3').css('width', '0%');
-            setTimeout(() => {
-                $('#progress3').css('width', data.content3/500*100+'%');
-                $('#progress3').attr('aria-valuenow', data.content3/500*100);
-            }, 300);
-
-            $('#progress4').css('width', '0%');
-            setTimeout(() => {
-                $('#progress4').css('width', data.content4/10*100+'%');
-                $('#progress4').attr('aria-valuenow', data.content4/10*100);
-            }, 400);
+                indicator.removeClass('heating cooling');
+                tempStatus.html('<i class="fas fa-check-circle text-success"></i> <strong>목표 온도 도달</strong><br><small>' + this.targetTemperature + '°C 유지 중</small>');
+            }, 5000);
         },
 
-        // 차트 초기화
-        initEnhancedCharts:function(){
-            this.createRealtimeChart();
-            this.createTopPlacesChart();
-            this.createRegionPieChart();
-            this.createHourlyActivityChart();
-            this.updateStatCards();
-
-            setInterval(() => {
-                this.createRealtimeChart();
-                this.createTopPlacesChart();
-                this.createRegionPieChart();
-                this.createHourlyActivityChart();
-                this.updateStatCards();
-            }, 10000);
-        },
-
-        createRealtimeChart:function(){
-            fetch('/logs/mapclick')
-                .then(response => response.text())
-                .then(data => {
-                    let lines = data.trim().split('\n');
-                    let hourlyData = {};
-
-                    lines.forEach(line => {
-                        let parts = line.split(', ');
-                        if(parts.length >= 3) {
-                            let hour = parts[0].trim().substring(0, 13);
-                            hourlyData[hour] = (hourlyData[hour] || 0) + 1;
-                        }
-                    });
-
-                    let categories = Object.keys(hourlyData).sort().slice(-12);
-                    let chartData = categories.map(h => hourlyData[h]);
-
-                    Highcharts.chart('realtimeChart', {
-                        chart: { type: 'spline' },
-                        title: { text: '실시간 클릭 추이' },
-                        xAxis: {
-                            categories: categories.map(h => h.substring(11, 13) + '시'),
-                            title: { text: '시간' }
-                        },
-                        yAxis: {
-                            title: { text: '클릭 수' },
-                            allowDecimals: false
-                        },
-                        series: [{
-                            name: '클릭 수',
-                            data: chartData,
-                            color: '#4e73df'
-                        }],
-                        credits: { enabled: false }
-                    });
-                });
-        },
-
-        createTopPlacesChart:function(){
-            fetch('/logs/mapclick')
-                .then(response => response.text())
-                .then(data => {
-                    let lines = data.trim().split('\n');
-                    let placeCount = {};
-
-                    lines.forEach(line => {
-                        let parts = line.split(', ');
-                        if(parts.length >= 3) {
-                            let place = parts[2].trim();
-                            placeCount[place] = (placeCount[place] || 0) + 1;
-                        }
-                    });
-
-                    let sortedPlaces = Object.entries(placeCount)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 5);
-
-                    let categories = sortedPlaces.map(item => item[0]);
-                    let chartData = sortedPlaces.map(item => item[1]);
-
-                    Highcharts.chart('topPlacesChart', {
-                        chart: { type: 'bar' },
-                        title: { text: '인기 장소 Top 5' },
-                        xAxis: { categories: categories },
-                        yAxis: {
-                            min: 0,
-                            title: { text: '방문 횟수' },
-                            allowDecimals: false
-                        },
-                        plotOptions: {
-                            bar: {
-                                dataLabels: { enabled: true },
-                                colorByPoint: true
-                            }
-                        },
-                        series: [{
-                            name: '방문 횟수',
-                            data: chartData
-                        }],
-                        credits: { enabled: false }
-                    });
-                });
-        },
-
-        createRegionPieChart:function(){
-            fetch('/logs/mapclick')
-                .then(response => response.text())
-                .then(data => {
-                    let lines = data.trim().split('\n');
-                    let regionCount = {};
-
-                    lines.forEach(line => {
-                        let parts = line.split(', ');
-                        if(parts.length >= 3) {
-                            let region = parts[1].trim().split(' ')[0];
-                            regionCount[region] = (regionCount[region] || 0) + 1;
-                        }
-                    });
-
-                    let pieData = Object.entries(regionCount).map(([name, value]) => ({
-                        name: name,
-                        y: value
-                    }));
-
-                    Highcharts.chart('regionDistChart', {
-                        chart: { type: 'pie' },
-                        title: { text: '지역별 방문 분포' },
-                        tooltip: {
-                            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
-                        },
-                        plotOptions: {
-                            pie: {
-                                allowPointSelect: true,
-                                cursor: 'pointer',
-                                dataLabels: {
-                                    enabled: true,
-                                    format: '<b>{point.name}</b>: {point.percentage:.1f}%'
-                                }
-                            }
-                        },
-                        series: [{
-                            name: '비율',
-                            colorByPoint: true,
-                            data: pieData
-                        }],
-                        credits: { enabled: false }
-                    });
-                });
-        },
-
-        createHourlyActivityChart:function(){
-            fetch('/logs/mapclick')
-                .then(response => response.text())
-                .then(data => {
-                    let lines = data.trim().split('\n');
-                    let hourCount = Array(24).fill(0);
-
-                    lines.forEach(line => {
-                        let parts = line.split(', ');
-                        if(parts.length >= 3) {
-                            let hour = parseInt(parts[0].trim().split(' ')[1].split(':')[0]);
-                            hourCount[hour]++;
-                        }
-                    });
-
-                    Highcharts.chart('hourlyChart', {
-                        chart: { type: 'column' },
-                        title: { text: '시간대별 활동 분포' },
-                        xAxis: {
-                            categories: Array.from({length: 24}, (_, i) => i + '시'),
-                            title: { text: '시간대' }
-                        },
-                        yAxis: {
-                            min: 0,
-                            title: { text: '활동 횟수' },
-                            allowDecimals: false
-                        },
-                        series: [{
-                            name: '활동 횟수',
-                            data: hourCount,
-                            color: '#1cc88a'
-                        }],
-                        credits: { enabled: false }
-                    });
-                });
-        },
-
-        updateStatCards:function(){
-            fetch('/logs/mapclick')
-                .then(response => response.text())
-                .then(data => {
-                    let lines = data.trim().split('\n');
-                    let placeCount = {};
-                    let hourCount = Array(24).fill(0);
-                    let today = new Date().toISOString().split('T')[0];
-                    let todayCount = 0;
-
-                    lines.forEach(line => {
-                        let parts = line.split(', ');
-                        if(parts.length >= 3) {
-                            let dateStr = parts[0].trim().split(' ')[0];
-                            let hour = parseInt(parts[0].trim().split(' ')[1].split(':')[0]);
-                            let place = parts[2].trim();
-
-                            placeCount[place] = (placeCount[place] || 0) + 1;
-                            hourCount[hour]++;
-
-                            if(dateStr === today) todayCount++;
-                        }
-                    });
-
-                    // 애니메이션과 함께 업데이트
-                    const totalElement = $('#totalVisits')[0];
-                    const todayElement = $('#todayVisits')[0];
-
-                    if(totalElement) {
-                        const oldTotal = parseInt($('#totalVisits').text().replace(/,/g, '')) || 0;
-                        animateValue(totalElement, oldTotal, lines.length, 1000);
-                    }
-
-                    if(todayElement) {
-                        const oldToday = parseInt($('#todayVisits').text().replace(/,/g, '')) || 0;
-                        animateValue(todayElement, oldToday, todayCount, 1000);
-                    }
-
-                    let topPlace = Object.entries(placeCount)
-                        .sort((a, b) => b[1] - a[1])[0];
-                    if(topPlace) {
-                        $('#topPlace').text(topPlace[0]);
-                    }
-
-                    let maxHour = hourCount.indexOf(Math.max(...hourCount));
-                    $('#peakTime').text(maxHour + '시');
-                });
+        resetTemperature: function() {
+            const indicator = $('.temperature-indicator');
+            indicator.removeClass('heating cooling');
+            indicator.find('.temp-value').text('--°');
+            $('#tempStatus').html('<i class="fas fa-thermometer-half text-muted"></i> <strong>대기 중</strong><br><small>차량 인식 대기</small>');
         }
     };
 
-    $(function(){
+    $(function() {
         center.init();
     });
 </script>
@@ -413,131 +234,86 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
-        <a href="/chart" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
-                class="fas fa-chart-bar fa-sm text-white-50"></i> 상세 분석 보기</a>
-    </div>
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h5 class="h5 mb-0 text-gray-800" id="aimsg"></h5>
-        <img id="generatedImage" src="/img/assistant.png"
-             width="100px;" class="img-fluid" alt="Generated Image" />
     </div>
 
-    <!-- ========== 새로운 통계 카드 추가 ========== -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                총 방문 수</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalVisits">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                오늘 방문</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayVisits">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                1위 장소</div>
-                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="topPlace">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-trophy fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                피크 타임</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="peakTime">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========== 새로운 차트 섹션 ========== -->
-    <div class="row">
+    <!-- 차량 인식 실시간 모니터링 -->
+    <div class="row mb-4">
         <div class="col-xl-12">
-            <div class="card shadow mb-4">
-                <div class="card-header card-header-gradient py-3">
-                    <h6 class="m-0 font-weight-bold">📊 실시간 활동 모니터링</h6>
+            <div class="card shadow">
+                <div class="card-header py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h6 class="m-0 font-weight-bold text-white">🚗 스마트 주차장 실시간 모니터링</h6>
                 </div>
                 <div class="card-body">
-                    <div class="enhanced-chart-container" id="realtimeChart"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <div class="row">
+                        <!-- 차량 이미지 -->
+                        <div class="col-md-5">
+                            <div class="card mb-3">
+                                <div class="card-header bg-info text-white">📸 최근 차량 이미지</div>
+                                <div class="card-body text-center">
+                                    <img id="carImage" src="/img/assistant.png" class="img-fluid rounded shadow"
+                                         alt="차량 이미지" style="max-height: 300px; object-fit: contain;" />
+                                </div>
+                            </div>
+                        </div>
 
-    <div class="row">
-        <div class="col-xl-8 col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">🏆 인기 장소 Top 5</h6>
-                </div>
-                <div class="card-body">
-                    <div class="enhanced-chart-container" id="topPlacesChart"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-success">🗺️ 지역별 분포</h6>
-                </div>
-                <div class="card-body">
-                    <div class="enhanced-chart-container" id="regionDistChart"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+                        <!-- 차량 인식 결과 -->
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-header bg-primary text-white">📋 차량 인식 결과</div>
+                                <div class="card-body">
+                                    <div id="carRecognitionStatus" class="alert mb-3" style="display: none;"></div>
 
-    <div class="row">
-        <div class="col-xl-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-info">⏰ 시간대별 활동 패턴</h6>
-                </div>
-                <div class="card-body">
-                    <div class="enhanced-chart-container" id="hourlyChart"></div>
+                                    <div class="mb-3">
+                                        <h6 class="font-weight-bold mb-2">상세 정보:</h6>
+                                        <div id="carInfoText" class="car-info-text">대기 중...</div>
+                                    </div>
+
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i>
+                                            최종 업데이트: <span id="lastUpdateTime">-</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 온도 제어 패널 -->
+                        <div class="col-md-3">
+                            <div class="card mb-3 shadow-sm">
+                                <div class="card-header text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                    🌡️ 스마트홈 온도 제어
+                                </div>
+                                <div class="card-body text-center">
+                                    <!-- 온도 인디케이터 -->
+                                    <div class="temperature-indicator mb-3">
+                                        <div class="temp-value">--°</div>
+                                        <div class="temp-label">목표 온도</div>
+                                    </div>
+
+                                    <!-- 목표 온도 설정 -->
+                                    <div class="mb-3">
+                                        <label class="font-weight-bold mb-2">목표 온도 설정</label>
+                                        <div class="input-group">
+                                            <input type="number" id="targetTempInput" class="form-control text-center"
+                                                   value="22" min="18" max="30" step="1">
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">°C</span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">권장: 20-24°C</small>
+                                    </div>
+
+                                    <!-- 상태 표시 -->
+                                    <div id="tempStatus" class="mt-3 p-2 bg-light rounded">
+                                        <i class="fas fa-thermometer-half text-muted"></i>
+                                        <strong>대기 중</strong><br>
+                                        <small>차량 인식 대기</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

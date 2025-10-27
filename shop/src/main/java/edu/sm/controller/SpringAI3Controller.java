@@ -56,6 +56,7 @@ public class SpringAI3Controller {
     }
     @RequestMapping("/ai6")
     public String ai6(Model model) {
+        model.addAttribute("adminserver",adminServer);
         model.addAttribute("center", dir+"ai6");
         model.addAttribute("left", dir+"left");
         return "index";
@@ -66,7 +67,20 @@ public class SpringAI3Controller {
         model.addAttribute("left", dir+"left");
         return "index";
     }
-
+    @RequestMapping("/ai9")
+    public String ai9(Model model) {
+        model.addAttribute("adminserver",adminServer);
+        model.addAttribute("center", dir+"ai9");
+        model.addAttribute("left", dir+"left");
+        return "index";
+    }
+    @RequestMapping("/ai97")
+    public String ai97(Model model) {
+        model.addAttribute("adminserver",adminServer);
+        model.addAttribute("center", dir+"ai97");
+        model.addAttribute("left", dir+"left");
+        return "index";
+    }
 }
 
 
