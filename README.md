@@ -30,6 +30,7 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - Java (Spring Framework)
 - Spring AI
 - Vector DB
+- JDBC Template
 
 ### ✅ AI/ML
 - GPT (텍스트 생성)
@@ -38,6 +39,8 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - TTS (음성 합성)
 - Vision API (이미지 분석)
 - RAG, Function Calling(AI대화 내용 저장 및 API 호출)
+- Vector Store (문서 임베딩 및 검색)
+- Token Text Splitter (문서 청크 분할)
 
 
 ### ✅ External APIs
@@ -123,6 +126,13 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - AI가 해당 이미지를 분석하여 재활용품 분류 방법과 처리 시 주의사항을 알려줌
 - AI의 답변은 텍스트와 음성(TTS)으로 동시에 제공됩니다.
 
+### 문서 관리 (springai4/ai3.jsp)
+- **다중 포맷 지원**: PDF, DOCX, TXT 파일 업로드
+- **자동 ETL 처리**: 문서 추출(Extract) → 변환(Transform) → 적재(Load)
+- **벡터 임베딩**: 문서를 작은 청크로 분할하여 Vector DB에 저장
+- **메타데이터 관리**: 문서 타입, 파일명, 청크 개수 자동 기록
+- **실시간 피드백**: 업로드 진행 상황 스트리밍 표시
+
 상세 정보: 차량 인식 결과, 시간, 상태 로그
 ---
 
@@ -148,6 +158,28 @@ Spring AI를 활용한 통합 여행 도우미 웹 애플리케이션
 - **동적 프롬프트**: 선택된 언어에 따라 AI 프롬프트 자동 변경
 - **현지화된 UI**: 언어별 버튼, 메시지, 안내문 제공
 
+### Vector Store
+- **PostgreSQL + pgvector**: 고성능 벡터 데이터베이스 활용
+- **자동 임베딩**: 문서 업로드 시 자동으로 벡터 변환
+- **유사도 검색**: Cosine Similarity 기반 문서 검색
+- **메타데이터 필터링**: 문서명(source) 기반 정밀 검색
+
+### 문서 처리
+- **ETL 파이프라인**: 추출 → 변환 → 적재 자동화
+- **Token Text Splitter**: 문서를 적절한 크기의 청크로 분할
+- **다중 리더 지원**: PDF, DOCX, TXT 각각 전용 리더 사용
+- **메타데이터 추가**: 타입, 파일명 등 자동 메타데이터 기록
+
+### AI 통합
+- **QuestionAnswerAdvisor**: RAG 패턴 구현을 위한 Spring AI 어드바이저
+- **스트리밍 응답**: Flux를 통한 실시간 응답 스트리밍
+- **에러 핸들링**: 429 Rate Limit 에러 자동 감지 및 사용자 안내
+- **프롬프트 최적화**: 문서 길이 제한으로 토큰 사용량 최적화
+
+### 실시간 통신
+- **SSE (Server-Sent Events)**: 스트리밍 응답 전송
+- **Reactive Programming**: Reactor 기반 비동기 처리
+- **FormData 전송**: 파일 업로드 및 파라미터 전송
 ---
 
 ## 📂 프로젝트 구조
@@ -166,9 +198,8 @@ shop/src/main/webapp/views/
 │   └── ai97.jsp             # AI 분리수거 정보
 ├── springai4/
 │   ├── ai1.jsp              # RAG + 날씨/맛집 AI
-│   └── ai2.jsp              # 여행 안전 정보 AI
-
-
+│   ├── ai2.jsp              # 여행 안전 정보 AI
+│   └── ai3.jsp              # 문서 관리 시스템 AI
 ```
 
 ---
@@ -201,6 +232,16 @@ shop/src/main/webapp/views/
 - `/ai3/translate` - 음성 번역
 - `/ai3/tts` - 텍스트를 음성으로 변환
 - `/ai3/image-analysis2` - 이미지 분석 및 해설
+
+### 문서 관리 시스템
+- `/ai4/txt-pdf-docx-etl` - 문서 업로드 및 벡터화
+- `/ai4/documents` - 문서 목록 조회
+- `/ai4/documents/source/{source}` - 개별 문서 삭제
+- `/ai4/rag-clear` - 전체 문서 삭제
+- `/ai4/rag-chat` - 문서 기반 질의응답
+- `/ai4/summary` - 문서 요약 생성
+- `/ai4/keywords` - 문서 키워드 추출
+- `/ai4/compare` - 문서 비교 분석
 
 
 -   Shop 서버 (차량 인식)
@@ -287,6 +328,12 @@ ex) https//127.0.0.1:8443/
 
 ### 분리수거 AI
 ![AI 분리수거 시스템](admin/src/main/resources/static/img/springai4ai97.png)
+
+### 문서 관리 AI
+![문서 관리 시스템(업로드)](admin/src/main/resources/static/img/springai4ai31.png)
+![문서 관리 시스템(RAG)](admin/src/main/resources/static/img/springai4ai32.png))
+![문서 관리 시스템(요약/키워드)](admin/src/main/resources/static/img/springai4ai33.png)
+![문서 관리 시스템(비교)](admin/src/main/resources/static/img/springai4ai34.png)
 
 ---
 ### 유튜브 시연 영상
