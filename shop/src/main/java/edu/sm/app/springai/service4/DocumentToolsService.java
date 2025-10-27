@@ -24,11 +24,10 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
-public class ETLService {
+public class DocumentToolsService {
     // ##### 필드 #####
     private ChatClient chatClient;
     @Autowired
@@ -37,7 +36,7 @@ public class ETLService {
 
 
     // ##### 생성자 #####
-    public ETLService(ChatClient.Builder chatClientBuilder) {
+    public DocumentToolsService(ChatClient.Builder chatClientBuilder) {
         this.chatClient = chatClientBuilder
                 .defaultAdvisors(
                         new SimpleLoggerAdvisor(Ordered.LOWEST_PRECEDENCE - 1)

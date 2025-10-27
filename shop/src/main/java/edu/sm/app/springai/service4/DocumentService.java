@@ -199,7 +199,7 @@ public class DocumentService {
                     .onErrorResume(error -> {
                         log.error("문서 비교 중 오류: {}", error.getMessage());
                         if (error.getMessage() != null && error.getMessage().contains("429")) {
-                            return Flux.just("⏳ API 요청 한도 초과. 1-2분 후 다시 시도해주세요.");
+                            return Flux.just("API 요청 한도 초과. 1-2분 후 다시 시도해주세요.");
                         }
                         return Flux.just("문서 비교 중 오류 발생: " + error.getMessage());
                     });
@@ -230,7 +230,7 @@ public class DocumentService {
                     .onErrorResume(error -> {
                         log.error("템플릿 실행 중 오류: {}", error.getMessage());
                         if (error.getMessage() != null && error.getMessage().contains("429")) {
-                            return Flux.just("⏳ API 요청 한도 초과. 1-2분 후 다시 시도해주세요.");
+                            return Flux.just("API 요청 한도 초과. 1-2분 후 다시 시도해주세요.");
                         }
                         return Flux.just("템플릿 실행 중 오류 발생: " + error.getMessage());
                     });

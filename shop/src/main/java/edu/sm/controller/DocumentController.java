@@ -2,7 +2,7 @@ package edu.sm.controller;
 
 import edu.sm.app.springai.service4.AiChatService;
 import edu.sm.app.springai.service4.DocumentService;
-import edu.sm.app.springai.service4.ETLService;
+import edu.sm.app.springai.service4.DocumentToolsService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,23 +17,23 @@ import java.util.Map;
 @RequestMapping("/api/ai4")
 @Slf4j
 @RequiredArgsConstructor
-public class Ai4Controller {
+public class DocumentController {
 
     final private AiChatService aiChatService;
-    final private ETLService etlService;
+    final private DocumentToolsService documentToolsService;
     final private DocumentService documentService;
 
     @PostMapping("/txt-pdf-docx-etl")
     public String txtPdfDocxEtl(
             @RequestParam("type") String type,
             @RequestParam("attach") MultipartFile attach) throws Exception {
-        String result = etlService.etlFromFile(type, attach);
+        String result = documentToolsService.etlFromFile(type, attach);
         return result;
     }
 
     @GetMapping("/rag-clear")
     public String ragClear() {
-        etlService.clearVectorStore();
+        documentToolsService.clearVectorStore();
         return "벡터 저장소의 데이터를 모두 삭제했습니다.";
     }
 
@@ -42,7 +42,7 @@ public class Ai4Controller {
             @RequestParam("question") String question,
             @RequestParam("source") String source
     ) {
-        return etlService.ragChat(question, source)
+        return documentToolsService.ragChat(question, source)
                 .onErrorResume(error -> {
                     log.error("RAG 질의 오류: {}", error.getMessage());
                     if (error.getMessage() != null && error.getMessage().contains("429")) {

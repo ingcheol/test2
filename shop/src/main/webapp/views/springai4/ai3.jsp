@@ -58,7 +58,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  let ai1 = {
+  let ai3 = {
     currentTab: 'upload',
 
     init: function() {
@@ -240,7 +240,7 @@
             docsInGroup.forEach(doc => {
               docListHtml += '<div class="col-md-4 mb-2">' +
                       '<div class="border p-2 rounded bg-light h-100 doc-item">' +
-                      '<button class="btn btn-danger btn-sm delete-btn" onclick="ai1.deleteDocument(\'' + doc.source + '\')">×</button>' +
+                      '<button class="btn btn-danger btn-sm delete-btn" onclick="ai3.deleteDocument(\'' + doc.source + '\')">×</button>' +
                       '<strong class="text-primary d-block text-truncate" title="' + doc.source + '">' + doc.source + '</strong>' +
                       '</div>' +
                       '</div>';
@@ -457,7 +457,7 @@
   };
 
   document.addEventListener('DOMContentLoaded', function() {
-    ai1.init();
+    ai3.init();
   });
 </script>
 <body>
